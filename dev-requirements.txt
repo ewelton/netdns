@@ -1,0 +1,6 @@
+wheel
+# unit testing
+nose
+# documentation
+Sphinx
+sphinxjp.themes.basicstrap

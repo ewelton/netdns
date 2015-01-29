@@ -1,0 +1,2 @@
+include LICENSE ChangeLog README.md
+include requirements.txt dev-requirements.txt version.txt
