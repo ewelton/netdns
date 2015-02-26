@@ -1,5 +1,5 @@
 import unittest
-from hyperdns.netdns.tlds import TLDs
+from hyperdns.netdns.tlds import TLDs, splitFqdnInZone
 
 class TestCase(unittest.TestCase):
 
@@ -94,3 +94,52 @@ class TestCase(unittest.TestCase):
         assert TLDs.isZone('first.other.test.nagoya.jp') == False
     def test_l03(self):
         assert TLDs.splitRnameZone('first.other.test.nagoya.jp').pair() == ('first','other.test.nagoya.jp.')
+
+    def test_sfiz01(self):
+        rz = splitFqdnInZone('www.test.com','test.com')
+        (rname,zone) = rz
+        assert rz.rname == 'www'
+        assert rz.zone == 'test.com.'
+        assert (rname,zone) == ('www', 'test.com.')
+
+    def test_sfiz02(self):
+        rz = splitFqdnInZone('two.three','two.three')
+        (rname,zone) = rz
+        assert rz.rname == '@'
+        assert rz.zone == 'two.three.'
+        assert (rname,zone) == ('@', 'two.three.')
+
+    def test_sfiz03(self):
+        rz = splitFqdnInZone('one.two.three','two.three')
+        (rname,zone) = rz
+        assert rz.rname == 'one'
+        assert rz.zone == 'two.three.'
+        assert (rname,zone) == ('one', 'two.three.')
+
+    def test_sfiz04(self):
+        rz = splitFqdnInZone('one.two.three.four','two.three.four')
+        (rname,zone) = rz
+        assert rz.rname == 'one'
+        assert rz.zone == 'two.three.four.'
+        assert (rname,zone) == ('one', 'two.three.four.')
+
+    def test_sfiz05(self):
+        rz = splitFqdnInZone('one.two.three.four','three.four')
+        (rname,zone) = rz
+        assert rz.rname == 'one.two'
+        assert rz.zone == 'three.four.'
+        assert (rname,zone) == ('one.two', 'three.four.')
+
+    def test_sfiz06(self):
+        rz = splitFqdnInZone('one.two.three','one.two.four')
+        (rname,zone) = rz
+        assert rz.rname == None
+        assert rz.zone == None
+        assert (rname,zone) == (None,None)
+
+    def test_sfiz07(self):
+        rz = splitFqdnInZone('two.three','one.two.three')
+        (rname,zone) = rz
+        assert rz.rname == None
+        assert rz.zone == None
+        assert (rname,zone) == (None,None)

@@ -20,6 +20,46 @@ class RnameZone:
     def __str__(self):
         return repr(self.pair())
 
+    def __iter__(self):
+        return iter((self.rname,self.zone))
+
+    def __getitem__(self,key):
+        return list(self)[key]
+
+
+def splitFqdn(self,fqdn):
+    return TLDs.splitRnameZone(fqdn)
+
+def domain_components(name):
+    return list(filter(lambda x: len(x) > 0,name.split('.')))
+
+def splitFqdnInZone(fqdn,zone):
+    fparts = domain_components(fqdn)
+    zparts = domain_components(zone)
+
+    flen = len(fparts)
+    zlen = len(zparts)
+
+    if flen < zlen:
+        return RnameZone(None,None)
+
+    count = 0
+    while count < flen and count < zlen and fparts[flen-count-1] == zparts[zlen-count-1]:
+        count = count + 1
+
+    if count == 0:
+        return RnameZone(None,None)
+
+    fparts = fparts[0:len(fparts)-count]
+
+    rname = '.'.join(fparts)
+    zone = '.'.join(zparts)+'.'
+
+    if rname == '':
+        rname = '@'
+
+    return RnameZone(rname,zone)
+
 class TLDs:
 
     _setup_done = False
