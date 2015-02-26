@@ -1,5 +1,5 @@
 import unittest
-from hyperdns.netdns.tlds import TLDs, splitFqdnInZone
+from hyperdns.netdns.names import *
 
 class TestCase(unittest.TestCase):
 

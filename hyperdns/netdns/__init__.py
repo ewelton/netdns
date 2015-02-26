@@ -79,7 +79,9 @@ from .names import (
     dotify,
     undotify,
     is_valid_zone_fqdn,
-    splitHostFqdn
+    splitHostFqdn,
+    splitFqdn,
+    splitFqdnInZone
     )
 from .recordspec import (
     RecordSpec,
