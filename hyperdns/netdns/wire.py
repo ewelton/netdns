@@ -1,122 +1,14 @@
-
-
-def dotify(name):
-    """ Add a dot to the end of the name if it wasn't there.
-    """
-    if not name.endswith("."):
-        return "%s." % name
-    return name
-
-def undotify(name):
-    if name.endswith("."):
-        return name[:-1]
-    return name
-
-
-def is_valid_zone_fqdn(zone_fqdn):
-    if zone_fqdn==None:
-        return False
-    return zone_fqdn.endswith(".")       
-
-def fqdn(name,zone=None):
-    """ This produces a string version of a name that is dot terminated
-        and ends with the trailing zone.  If the name already ends with
-        the zone name, it is not appended.  For example
-
-            (a) -> a.
-            (a.) -> a.
-            (a,example.com) -> a.example.com.
-            (a.example.com,example.com) -> a.example.com.
-
-        the return value is ascii, not unicode
-
-        Note: does not detect multi
-    """
-    # ensure trailing dot
-    if not name.endswith('.'):
-        # add zone if required, ensuring dot
-        if zone==None:
-            name+='.'
-        else:
-            if not zone.endswith('.'):
-                if name.endswith(zone):
-                    name=name+'.'
-                else:
-                    name=name+'.'+zone+'.'
-            else:
-                name+='.'
-                if not name.endswith(zone):
-                    name=name+zone
-
-    return name
-
-def splitHostFqdn(name,zone=None):
-    """ split a name into two parts, if a zone is specified then we
-        will append that to the end of the name if required.
-    """
-    f=fqdn(name,zone)
-    components=f.split(".")[:-1]
-    ct=len(components)
-    if ct<2:
-        raise Exception("'%s' is not a host or zone fqdn" % name)
-    elif ct==2:
-        return (None,'.'.join(components)+'.')
-    else:
-        return ('.'.join(components[:-2]),'.'.join(components[-2:])+'.')
-
-
-
-
 class ZoneFQDNTooLong(Exception):
     pass
 
 class NodeNameComponentTooLong(Exception):
     pass
-    
-class NodeName(object):
 
+class NodeName(object):
     """
     Container for DNS label
 
     Supports IDNA encoding for unicode domain names
-
-    >>> l1 = NodeName("aaa.bbb.ccc.")
-    >>> l2 = NodeName([b"aaa",b"bbb",b"ccc"])
-    >>> l1 == l2
-    True
-    >>> l3 = NodeName("AAA.BBB.CCC")
-    >>> l1 == l3
-    True
-    >>> l1 == 'AAA.BBB.CCC'
-    True
-    >>> x = { l1 : 1 }
-    >>> x[l1]
-    1
-    >>> l1
-    <NodeName: 'aaa.bbb.ccc.'>
-    >>> str(l1)
-    'aaa.bbb.ccc.'
-    >>> l3 = l1.add("xxx.yyy")
-    >>> l3
-    <NodeName: 'xxx.yyy.aaa.bbb.ccc.'>
-    >>> l3.matchSuffix(l1)
-    True
-    >>> l3.matchSuffix("xxx.yyy.")
-    False
-    >>> l3.stripSuffix("bbb.ccc.")
-    <NodeName: 'xxx.yyy.aaa.'>
-    >>> l3.matchGlob("*.[abc]aa.BBB.ccc")
-    True
-    >>> l3.matchGlob("*.[abc]xx.bbb.ccc")
-    False
-
-    # Too hard to get unicode doctests to work on Python 3.2  
-    # (works on 3.3)
-    # >>> u1 = NodeName(u'\u2295.com')
-    # >>> u1.__str__() == u'\u2295.com.'
-    # True
-    # >>> u1.label == ( b"xn--keh", b"com" )
-    # True
 
     """
     def __init__(self,label):
@@ -315,5 +207,3 @@ class DNSBuffer(Buffer):
             self.pack("!B",len(element))
             self.append(element)
         self.append(b'\x00')
-
-
