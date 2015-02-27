@@ -52,20 +52,6 @@ def fqdn(name,zone=None):
 
     return name
 
-def splitHostFqdn(name,zone=None):
-    """ split a name into two parts, if a zone is specified then we
-        will append that to the end of the name if required.
-    """
-    f=fqdn(name,zone)
-    components=f.split(".")[:-1]
-    ct=len(components)
-    if ct<2:
-        raise Exception("'%s' is not a host or zone fqdn" % name)
-    elif ct==2:
-        return (None,'.'.join(components)+'.')
-    else:
-        return ('.'.join(components[:-2]),'.'.join(components[-2:])+'.')
-
 class RnameZone:
 
     def __init__(self,rname,zone):
