@@ -80,7 +80,8 @@ from .names import (
     undotify,
     is_valid_zone_fqdn,
     splitFqdn,
-    splitFqdnInZone
+    splitFqdnInZone,
+    isIPAddress
     )
 from .recordspec import (
     RecordSpec,

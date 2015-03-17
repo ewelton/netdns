@@ -1,5 +1,6 @@
 import pkg_resources
 import re
+import ipaddress
 from hyperdns.netdns import ZoneFQDNTooLong, NodeNameComponentTooLong
 
 def dotify(name):
@@ -109,6 +110,13 @@ def splitFqdnInZone(fqdn,zone):
         rname = '@'
 
     return RnameZone(rname,zone)
+
+def isIPAddress(address):
+    try:
+        ipaddress.ip_address(address)
+        return True
+    except ValueError as E:
+        return False
 
 class TLDs:
 
