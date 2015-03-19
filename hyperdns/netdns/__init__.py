@@ -81,7 +81,9 @@ from .names import (
     is_valid_zone_fqdn,
     splitFqdn,
     splitFqdnInZone,
-    isIPAddress
+    isIPAddress,
+    isIPv4Address,
+    isIPv6Address
     )
 from .recordspec import (
     RecordSpec,

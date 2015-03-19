@@ -118,6 +118,20 @@ def isIPAddress(address):
     except ValueError as E:
         return False
 
+def isIPv4Address(address):
+    try:
+        ip = ipaddress.ip_address(address)
+        return isinstance(ip,ipaddress.IPv4Address)
+    except ValueError as E:
+        return False
+
+def isIPv6Address(address):
+    try:
+        ip = ipaddress.ip_address(address)
+        return isinstance(ip,ipaddress.IPv6Address)
+    except ValueError as E:
+        return False
+
 class TLDs:
 
     _setup_done = False
