@@ -26,6 +26,7 @@ class ResourceData(object):
         self._recpool=recpool
         if self._recpool==None:
             self._recpool=RecordPool()
+        self.rtree = None
         
     
     def hasRecord(self,spec):
