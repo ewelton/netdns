@@ -105,6 +105,19 @@ class ResourceTree:
         else:
             raise Exception('Unknown kind: %s'%(kind))
 
+    @property
+    def referenced_cnames(self):
+        referenced = set()
+        self._find_referenced_cnames(self.root,referenced)
+        return referenced
+
+    def _find_referenced_cnames(self,node,referenced):
+        if node.cname != None:
+            referenced.add(node.cname.rdata)
+        if node.members != None:
+            for member in node.members:
+                self._find_referenced_cnames(member,referenced)
+
 class ResourceNode:
 
     def __init__(self,kind,info,cname):
