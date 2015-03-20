@@ -78,7 +78,7 @@ class RnameZone:
         return list(self)[key]
 
 
-def splitFqdn(self,fqdn):
+def splitFqdn(fqdn):
     return TLDs.splitRnameZone(fqdn)
 
 def domain_components(name):
