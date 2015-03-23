@@ -5,6 +5,7 @@ import hyperdns.netdns
 from hyperdns.netdns import (
     dotify,
     undotify,
+    splitFqdnInZone,
     RecordType,
     RecordPool,
     RecordClass,
@@ -14,6 +15,7 @@ from hyperdns.netdns import (
     MalformedJsonZoneData,
     CorruptBindFile
     )
+from .resourcetree import ResourceTree
 
 class ResourceData(object):
     
@@ -76,10 +78,22 @@ class ResourceData(object):
 
     @property
     def __dict__(self):
-        return {
-            "name":self._localname,
-            "records":[rec.__dict__ for rec in self._recpool.records]
+        result = {
+            'name': self._localname,
         }
+        records = []
+        if self.rtree != None:
+            result['rtree'] = self.rtree.json()
+            for rec in self._recpool.records:
+                if rec.rdtype not in [RecordType.CNAME,RecordType.A,RecordType.AAAA]:
+                    records.append(rec.__dict__)
+            if len(records) > 0:
+                result['records'] = records
+        else:
+            for rec in self._recpool.records:
+                records.append(rec.__dict__)
+            result['records'] = records
+        return result
         
         
 
@@ -254,8 +268,19 @@ class ZoneData(object):
             raise InvalidZoneFQDNException(zd._fqdn)
             
         for resource in jsondata.get('resources'):
-            for r in resource['records']:
-                zd.attachResourceData(resource['name'],RecordSpec(json=r))
+            rname = resource['name']
+            rd = ResourceData(zd,rname)
+            zd._resources[rname] = rd
+
+            records = resource.get('records')
+            if records != None:
+                for r in records:
+                    zd.attachResourceData(rname,RecordSpec(json=r))
+
+            rtree = resource.get('rtree')
+            if rtree != None:
+                rd.rtree = ResourceTree.from_json(rtree)
+
         return zd
         
     @classmethod
@@ -521,17 +546,30 @@ class ZoneData(object):
         for r in sorted(self._resources.keys()):
             yield self._resources[r]
 
+    @property
+    def _root_resources(self):
+        cnames = set()
+        for res in self.resources:
+            if res.rtree != None:
+                for n in res.rtree.referenced_cnames:
+                    cnames.add(n)
+        roots = set([res.name for res in self.resources])
+        for n in cnames:
+            rname = splitFqdnInZone(n,self.fqdn).rname
+            if rname != None:
+                roots.remove(rname)
+        for r in sorted(roots):
+            yield self._resources[r]
     
     @property
     def __dict__(self):
         """
         Return the zone data as a dict tree ready for json serialization.
         """
+        resources = []
+        for res in self._root_resources:
+            resources.append(res.__dict__)
         return {
-            'fqdn':self._fqdn,
-            'resources':[x.__dict__ for x in self._resources.values()]
+            'fqdn': self._fqdn,
+            'resources': resources,
         }
-        
-        
-
-

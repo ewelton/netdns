@@ -21,30 +21,134 @@ class ResourceTree:
 
     def print(self,indent=''):
         print(indent+self.root.kind)
-        self._print_entries(self.root.entries,indent=indent+'    ')
+        self._print_entries(self.root.members,indent=indent+'    ')
 
-    def _print_entries(self,entries,indent=''):
-        for entry in entries:
-            line = indent+str(entry.info)+': '+entry.node.kind
-            if isinstance(entry.node,RecordNode):
-                value = str(entry.node)
+    def _print_entries(self,members,indent=''):
+        for node in members:
+            line = indent+str(node.info)+': '+node.kind
+            if isinstance(node,RecordNode):
+                value = str(node)
             else:
-                value = entry.node.value
+                value = node.value
             if value != None:
                 line = line+' '+str(value)
-            if entry.cname != None:
-                line = line+' '+str(RecordNode(entry.cname))
+            if node.cname != None:
+                line = line+' '+str(RecordNode(None,None,node.cname))
             print(line)
-            if entry.node.entries != None:
-                self._print_entries(entry.node.entries,indent+'    ')
+            if node.members != None:
+                self._print_entries(node.members,indent+'    ')
+
+    def json(self):
+        return self.root.json()
+
+    @classmethod
+    def from_json(cls,data):
+        root = cls._from_json_recursive(data)
+        return ResourceTree(root)
+
+    @classmethod
+    def _get_cname(cls,entry):
+        entry_cname = entry.get('cname')
+        entry_cname_ttl = entry.get('cname_ttl')
+        if entry_cname != None and entry_cname_ttl != None:
+            cname = RecordSpec(rdtype=RecordType.CNAME,
+                               rdata=entry_cname,
+                               ttl=entry_cname_ttl)
+        else:
+            cname = None
+        return cname
+
+    @classmethod
+    def _get_entry(cls,entry):
+        cname = cls._get_cname(entry)
+        entry_info = entry['info']
+        entry_node = entry['node']
+        node = cls._from_json_recursive(entry_node)
+        return ResourceEntry(entry_info,cname,node)
+
+    @classmethod
+    def _from_json_recursive(cls,data):
+        kind = data.get('kind')
+        members = data.get('members')
+        info = data.get('info')
+        cname_rdata = data.get('cname')
+        cname_ttl = data.get('cname_ttl')
+        if cname_rdata != None and cname_ttl != None:
+            cname = RecordSpec(rdtype=RecordType.CNAME,rdata=cname_rdata,ttl=cname_ttl)
+        else:
+            cname = None
+        if kind == 'Geo':
+            result = GeoNode(info,cname)
+            # for entry in entries:
+            #     result.entries.append(cls._get_entry(entry))
+            for member in members:
+                result.members.append(cls._from_json_recursive(member))
+            return result
+        elif kind == 'Weighted':
+            result = WeightedNode(info,cname)
+            # for entry in entries:
+            #     result.entries.append(cls._get_entry(entry))
+            for member in members:
+                result.members.append(cls._from_json_recursive(member))
+            return result
+        elif kind == 'RecordSet':
+            result = RecordSetNode(info,cname)
+            # for entry in entries:
+            #     result.entries.append(cls._get_entry(entry))
+            for member in members:
+                result.members.append(cls._from_json_recursive(member))
+            return result
+        elif kind == 'Record':
+            spec = RecordSpec(json=data['value'])
+            result = RecordNode(info,cname,spec)
+            return result
+        else:
+            raise Exception('Unknown kind: %s'%(kind))
+
+    @property
+    def referenced_cnames(self):
+        referenced = set()
+        self._find_referenced_cnames(self.root,referenced)
+        return referenced
+
+    def _find_referenced_cnames(self,node,referenced):
+        if node.cname != None:
+            referenced.add(node.cname.rdata)
+        if node.members != None:
+            for member in node.members:
+                self._find_referenced_cnames(member,referenced)
 
 class ResourceNode:
 
-    def __init__(self,kind,children=None,value=None):
+    def __init__(self,kind,info,cname):
         self.kind = kind
-        self.children = children
-        self.value = value
-        self.entries = None
+        self.info = info
+        self.cname = cname
+        self.members = None
+        self.value = None
+
+    def add(self,member):
+        self.members.append(member)
+
+    def json(self):
+        result = {
+            'kind': self.kind,
+            }
+        if self.info != None:
+            result['info'] = self.info
+        if self.cname != None:
+            result['cname'] = self.cname.rdata
+            result['cname_ttl'] = self.cname.ttl
+        if self.members != None:
+            jsChildren = []
+            for child in self.members:
+                # jsChild = { 'info': entry.info,
+                #             'node': entry.node.json() }
+                jsChildren.append(child.json())
+            result['members'] = jsChildren
+        if isinstance(self,RecordNode):
+            result['value'] = self.value.__dict__
+        return result
 
 class ResourceEntry:
 
@@ -58,40 +162,32 @@ class ResourceEntry:
 
 class GeoNode(ResourceNode):
 
-    def __init__(self):
-        super(GeoNode,self).__init__('Geo',[])
-        self.entries = []
-
-    def addRegion(self,region_code,cname,node):
-        self.entries.append(ResourceEntry(region_code,cname,node))
+    def __init__(self,info,cname):
+        super(GeoNode,self).__init__('Geo',info,cname)
+        self.members = []
 
 class WeightedNode(ResourceNode):
 
-    def __init__(self):
-        super(WeightedNode,self).__init__('Weighted',[])
-        self.entries = []
-
-    def addWeighted(self,weight,cname,node):
-        self.entries.append(ResourceEntry(weight,cname,node))
+    def __init__(self,info,cname):
+        super(WeightedNode,self).__init__('Weighted',info,cname)
+        self.members = []
 
 class RecordSetNode(ResourceNode):
 
-    def __init__(self,cname):
-        self.cname = cname
-        kind = 'RecordSet'
-        if cname != None:
-            kind = '%s %s '%(kind,cname)
-        super(RecordSetNode,self).__init__(kind,[])
-        self.entries = []
+    def __init__(self,info,cname):
+        super(RecordSetNode,self).__init__('RecordSet',info,cname)
+        self.members = []
 
-    def addRecord(self,cname,value):
-        self.entries.append(ResourceEntry(None,cname,RecordNode(value)))
+    def addRecord(self,record):
+        assert isinstance(record,RecordSpec)
+        self.members.append(RecordNode(None,None,record))
 
 class RecordNode(ResourceNode):
 
-    def __init__(self,value):
+    def __init__(self,info,cname,value):
         assert isinstance(value,RecordSpec)
-        super(RecordNode,self).__init__('Record',None,value)
+        super(RecordNode,self).__init__('Record',info,cname)
+        self.value = value
 
     def __str__(self):
         return '%s %s %d'%(RecordType.as_str(self.value.rdtype),self.value.rdata,self.value.ttl)
