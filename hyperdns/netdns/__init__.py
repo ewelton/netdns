@@ -1,10 +1,17 @@
 
 from .config import NetDNSConfiguration
-from .recordclass import RecordClass
-from .recordtype import RecordType
+from .enums import (
+    RecordClass,
+    RecordType,
+    OpCode,
+    ResponseCode
+    )
 
 
 class MalformedRecordException(Exception):
+    pass
+    
+class UnsupportedRecordType(Exception):
     pass
     
 class MalformedTTLException(MalformedRecordException):
@@ -74,29 +81,58 @@ class IncorrectlyQualifiedResourceName(Exception):
 class OnlySOARecordsHaveSOAFields(Exception):
     pass
 
+class RFC2181Violation(Exception):
+    """Indicates that the resource record set does not have a common
+    TTL, as defined in :rfc:`2181#5.2`
+    """
+    pass
+
+class TTLIsNotPreferredException(Exception):
+    """Indicates that a resource record set has a common TTL in it's
+    records, but is not.
+    """
+    pass
+
+
+def isIPAddress(address):
+    try:
+        ipaddress.ip_address(address)
+        return True
+    except ValueError as E:
+        return False
+
+def isIPv4Address(address):
+    try:
+        ip = ipaddress.ip_address(address)
+        return isinstance(ip,ipaddress.IPv4Address)
+    except ValueError as E:
+        return False
+
+def isIPv6Address(address):
+    try:
+        ip = ipaddress.ip_address(address)
+        return isinstance(ip,ipaddress.IPv6Address)
+    except ValueError as E:
+        return False
+
+
 
 from .names import (
     dotify,
     undotify,
     is_valid_zone_fqdn,
     splitFqdn,
-    splitFqdnInZone,
-    isIPAddress,
-    isIPv4Address,
-    isIPv6Address
+    splitFqdnInZone
     )
 from .recordspec import (
-    RecordSpec,
-    MalformedRecordException,
-    MalformedTTLException
+    RecordSpec
     )
 from .recordset import (
-    RecordSet,
-    ResourceRecordTypeClash
+    RecordSet
     )
 from .recordpool import RecordPool
 from .resolver import NetDNSResolver
 from .model import (
     ResourceData,ZoneData
 )
-
+from .scanner import Scanner

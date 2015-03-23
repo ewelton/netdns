@@ -1,5 +1,7 @@
-from .recordtype import RecordType
-from .recordspec import RecordSpec
+from hyperdns.netdns import (
+    RecordType,
+    RecordSpec
+    )
 
 class ResourceTree:
 

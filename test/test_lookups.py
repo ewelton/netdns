@@ -1,7 +1,7 @@
 import unittest
 import hyperdns.netdns as dns
 import ipaddress
-from hyperdns.netdns import NetDNSResolver
+from hyperdns.netdns import NetDNSResolver,RecordType
 
 class TestCase(unittest.TestCase):
 
@@ -14,20 +14,22 @@ class TestCase(unittest.TestCase):
         pass
 
     def test_a00_get_address_from_name(self):
-        result=NetDNSResolver.get_address_for_nameserver('ns1.google.com')
+        result=NetDNSResolver.get_address_for_resolver('ns1.google.com')
         assert result==self.ns1_google
         
     def test_a01_get_address_from_addr(self):
-        result=NetDNSResolver.get_address_for_nameserver('8.8.8.8')
+        result=NetDNSResolver.get_address_for_resolver('8.8.8.8')
         assert result==self.eights
-        result=NetDNSResolver.get_address_for_nameserver(self.eights)
+        result=NetDNSResolver.get_address_for_resolver(self.eights)
         assert result==self.eights
 
     def test_a02_quick_lookup(self):
         #result=NetDNSResolver.query_nameserver('www.google.com','8.8.8.8',recursive=True,triesRemaining=1)
         result=NetDNSResolver.quick_lookup('ns1.google.com')
         assert result!=[]
-        assert result['AnswerSection'][0]['Address']=='216.239.32.10'
+        recs=result.selected_records(rdtype=RecordType.A)
+        rec=list(recs)[0]
+        assert rec.rdata=='216.239.32.10'
 
         
     def xtest_a02_query_nameserver(self):

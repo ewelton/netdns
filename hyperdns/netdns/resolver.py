@@ -3,90 +3,202 @@ import dns.resolver,dns.ipv4
 from hyperdns.netdns import (
     undotify,
     RecordType,RecordClass,
+    RecordPool,
     AddressNotFound,
     UnknownNameserver,
-    NetDNSConfiguration
+    NetDNSConfiguration,
+    MalformedRecordException,
+    UnsupportedRecordType
     )
 import ipaddress
 from ipaddress import ip_address,IPv4Address,IPv6Address
+from enum import IntEnum
+
 
 class NetDNSResolver(object):
 
+    class ResponseFormat(IntEnum):
+        """ Enumeration defining 
+        """
+    
+        JSON=0
+        """Format results as  http://tools.ietf.org/html/draft-bortzmeyer-dns-json-01
+        """
+    
+        NETDNS=1
+        """Return RecordSets as response
+        """
+    
+        TUPLE=2
+        """Return tuples
+        """
+    
     @classmethod
-    def get_address_for_nameserver(cls,nameserver):
-        """Return the address for a given nameserver, performing an initial lookup
-        if required, but allowing ip_addresses to pass right through
+    def get_address_for_resolver(cls,resolver,exception=True):
+        """
+        Return an IPv4Address or an IPv6Address for a given resolver, which
+        can either be the name of a server, (which will then be looked up),
+        or it can be a string representation of an ip address (either v4 or v6),
+        or it can be a python3 address object.
+        
+        If the resolver address is an IPv4Address or IPv6Address object, it is
+        simply returned.  If it is a string, then an attempt is made to convert
+        that string into an IPv4Address or IPv6Address.  If that attempt succeeds
+        the address is simply returned.  If that attempt fails, then we assume
+        that the string is a 'name' of some sort, and we try to look it up using
+        the default system resolver.  We scan the results and return the first
+        A or AAAA record we encounter.
+        
+        If we can not locate an A or AAAA record associated with the name specified
+        in the resolver string, then we raise an AddressNotFound exception if the
+        exception parameter is set to True (the default).  If the exception parameter
+        is set to false, we return None.
+        
+        :param resolver: the string or address to map to an IP address object 
+        :type resolver: str with name or ipaddress, or IP address
+        :param exception: controls whether or not a None is returned in lieu
+                          of an AddressNotFound exception
+        :type exception: boolean, default to True
+        :returns: IPv4Address or IPv6Address of resolver
+        :raises AddressNotFound: if we can not locate a valid IPv4 or IPv6 address
+                                 and if the exception parameter is set to True, which
+                                 is the default.  If the exception parameter is false,
+                                 then a None is returned instead.
+
+        :Example:
+        .. code-block:: python
+           :emphasize-lines: 2,4,6,8,14
+
+            >>> from hyperdns.netdns import NetDNSResolver,AddressNotFound
+            >>> print(NetDNSResolver.get_address_for_resolver('ns1.yahoo.com'))
+            68.180.131.16
+            >>> print(NetDNSResolver.get_address_for_resolver('yahoo.com'))
+            206.190.36.45
+            >>> print(NetDNSResolver.get_address_for_resolver('1.2.3.4'))
+            1.2.3.4
+            >>> print(NetDNSResolver.get_address_for_resolver('1.2.3.4.5'))
+            Traceback (most recent call last):
+              File "<stdin>", line 1, in <module>
+              File "/Users/dnsmanager/h/netdns/hyperdns/netdns/resolver.py", line 57, in get_address_for_resolver
+                raise AddressNotFound("Address Not Found - lookup failed for '%s'" % resolver)
+            hyperdns.netdns.AddressNotFound: Address Not Found - lookup failed for '1.2.3.4.5'
+            >>> print(NetDNSResolver.get_address_for_resolver('1.2.3.4.5',exception=False))
+            None          
         """
         try:
-            return ip_address(nameserver)
+            # if we've already got an address object, just return it, otherwise
+            # try to convert it to an address
+            if isinstance(resolver,(IPv4Address,IPv6Address)):
+                return resolver
+            return ip_address(resolver)
         except ValueError:
+            # if the automatic address conversion fails, then try to look it up
+            # using the local system resolver.
             try:      
-                resolver=dns.resolver.Resolver()
-                resolver.lifetime=1.0
-                query=resolver.query(nameserver)
+                external_resolver=dns.resolver.Resolver()
+                external_resolver.lifetime=1.0
+                query=external_resolver.query(resolver)
                 for answer in query.response.answer:
                     for item in answer.items:
-                        if item.rdtype==1:
+                        if item.rdtype==1 or item.rdtype==28:
                             return ip_address(item.to_text())
             except:
                 pass
-            raise AddressNotFound("Address Not Found - lookup failed for '%s'" % nameserver)
-
+        if exception:
+            raise AddressNotFound("Address Not Found - lookup failed for '%s'" % resolver)
+        else:
+            return None
 
     @classmethod
-    def get_nameservers_for_zone(cls,fqdn,nameserver=NetDNSConfiguration.get_default_nameserver()):
+    def get_nameservers_for_zone(cls,fqdn,nameserver=None):
+        """Return the nameserver names for a domain, if no nameserver is provided, the
+        default nameserver is used.
+        
+        
+        """
+        if nameserver==None:
+            nameserver=NetDNSConfiguration.get_default_nameserver()
         return cls.query_nameserver(fqdn,nameserver,rtype=RecordType.NS)
     
     @classmethod
-    def query_nameserver(cls,host,nameserver,recursive=True,triesRemaining=1,asjson=False,rtype=RecordType.ANY):
-        """look up a host at a specific nameserver, return all of the result records
-        in an array of (type,text) tuples.
-        """
+    def query_resolver(cls,host,resolver,recursive=True,
+                            triesRemaining=1,format=None,rtype=RecordType.ANY):
+        """look up a host at a specific nameserver, returning either a RecordPool
+        or a Bortzmeyer JSON result.
+        
+        :param host: host or domain name to query
+        :param nameserver: the resolver to query
+        
+        :type host: string
 
-        result=[]
+        
+        """
+        if format==None:
+            format=cls.ResponseFormat.NETDNS
+        if not format in cls.ResponseFormat:
+            raise Exception("Invalid response format %s" % format)
+        
+        result=None
+        
+        # first get 
         try:
-            if not isinstance(nameserver,(IPv4Address,IPv6Address)):
-                nameserver=cls.get_address_for_nameserver(undotify(nameserver))
+            resolver=cls.get_address_for_resolver(resolver)
         except AddressNotFound as E:
-            raise UnknownNameserver("Failed to locate nameserver '%s'" % nameserver)
-        nameserver="%s" % nameserver
+            raise UnknownNameserver("Failed to locate resolver '%s'" % resolver)
+        resolver="%s" % resolver
         
         while triesRemaining>0:
             try:
                 query=dns.message.make_query(host,rtype,RecordClass.IN)
                 if not recursive:
                     query.flags &= ~dns.flags.RD
-                #print("Querying %s" % nameserver)
-                response = dns.query.udp(query,nameserver,timeout=1)
-                #print(response)
-                if asjson:
-                    result=cls.format_as_json(response, query.flags, nameserver)
-                else:
+                    
+                response = dns.query.udp(query,resolver,timeout=1)
+
+                if format==cls.ResponseFormat.JSON:
+                    result=cls.format_as_json(response, query.flags, resolver)
+                elif format==cls.ResponseFormat.TUPLE:
                     for answer in response.answer:
                         for item in answer.items:
+                            if result==None:
+                                result=[]
                             result.append((item.rdtype,item.to_text(),answer.ttl))
+                else:
+                    result=RecordPool()
+                    for answer in response.answer:
+                        for item in answer.items:
+                            try:
+                                result.add({
+                                    'ttl':answer.ttl,
+                                    'rdata':item.to_text(),
+                                    'type':item.rdtype,
+                                    'class':RecordClass.IN,
+                                    'source':'%s' % resolver
+                                    })
+                            except UnsupportedRecordType:
+                                pass               
                 triesRemaining=0
             except dns.exception.Timeout as e:
                 triesRemaining=triesRemaining-1
             except Exception as e:
-                result.append(('ERROR',e.__class__.__name__))
+                #result.append(('ERROR',e.__class__.__name__))
                 triesRemaining=0
                 raise
-        #print nameserver,result
+        #print resolver,result
         return result
 
     @classmethod
     def quick_lookup(cls,host,nameserver=NetDNSConfiguration.get_default_nameserver()):
-        return cls.query_nameserver(host,nameserver,
-                recursive=True,triesRemaining=3,asjson=True,
+        return cls.query_resolver(host,nameserver,
+                recursive=True,triesRemaining=3,format=cls.ResponseFormat.NETDNS,
                 rtype=RecordType.ANY)
 
     @classmethod
     def full_report_as_json(cls,host,nameserver=NetDNSConfiguration.get_default_nameserver()):
         """Perform a lookup of all information about a host at a given nameserver
         """
-        return cls.query_nameserver(host,nameserver,recursive=True,
-                rtype=RecordType.ANY,asjson=True,triesRemaining=5)
+        return cls.query_resolver(host,nameserver,recursive=True,
+                rtype=RecordType.ANY,format=cls.ResponseFormat.JSON,triesRemaining=5)
 
 
     @classmethod

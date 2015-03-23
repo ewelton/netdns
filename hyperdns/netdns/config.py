@@ -1,127 +1,185 @@
-import copy,ipaddress
+import ipaddress,os,pkg_resources,re,json
+
+class classproperty(object):
+    def __init__(self, f):
+        self.f = f
+    def __get__(self, obj, owner):
+        return self.f(owner)
+
 
 class NetDNSConfiguration(object):
-    """The HyperDNS library uses a set of configuration files, which may be
-    updated dynamically, but are best cached locally.
     """
+    The NetDNS library utilizes some static data, some of which can
+    be updated from remote sources.  However, in order to allow the
+    library to be used quickly, and offline, local caches of 'the latest'
+    values are stored locally as part of the module.  These will be
+    loaded from the module, upon first use, unless the environment
+    variable NETDNS_CONFIGURATION_DIR is set, in which case they will
+    be loaded from that directory.  Dynamic updates to the configuration
+    file will be recorded in that directory, and dynamic updates will not
+    be available unless that environment variable is set.    
+    """
+
+    NETDNS_CONFIGURATION_DIR=os.environ.get('NETDNS_CONFIGURATION_DIR')
     
-    FALLBACK={
-        'nameservers':{
-            'Level3':['209.244.0.3','209.244.0.4'],
-            'Google':['8.8.8.8','8.8.4.4'],
-            'Comodo Secure DNS':['8.26.56.26','8.20.247.20'],
-            'OpenDNS Home':['208.67.222.222','208.67.220.220'],
-            'DNS Advantage':['156.154.70.1','156.154.71.1'],
-            'Norton ConnectSafe':['199.85.126.10','199.85.127.10'],
-            'GreenTeamDNS':['81.218.119.11','209.88.198.133'],
-            'SafeDNS':['195.46.39.39','195.46.39.40'],
-            'OpenNIC':['216.87.84.211','23.90.4.6'],
-            'Public-Root':['199.5.157.131','208.71.35.137'],
-            'SmartViper':['208.76.50.50','208.76.51.51'],
-            'Dyn':['216.146.35.35','216.146.36.36'],
-            'FreeDNS':['37.235.1.174','37.235.1.177'],
-            'censurfridns.dk':['89.233.43.71','89.104.194.142'],
-            'DNS.WATCH':['84.200.69.80','84.200.70.40'],
-            'Hurricane Electric':['74.82.42.42'],
-            'puntCAT':['109.69.8.51']
+    configuration_files={
+        'iana-tlds': {
+            'data':None, # indicates not yet loaded
+            'url':'http://data.iana.org/TLD/tlds-alpha-by-domain.txt',
+            'resource':'tlds-alpha-by-domain.txt',
+            'file':os.path.join(NETDNS_CONFIGURATION_DIR,'tlds-alpha-by-domain.txt') \
+                if NETDNS_CONFIGURATION_DIR is not None else None
         },
-        'tld':{
-            'iana_url':'http://data.iana.org/TLD/tlds-alpha-by-domain.txt',
-            'map':[
-                'AC', 'ACADEMY', 'ACTOR', 'AD', 'AE', 'AERO', 'AF', 'AG', 'AGENCY', 'AI', 'AIRFORCE',
-                'AL', 'AM', 'AN', 'AO', 'AQ', 'AR', 'ARCHI', 'ARPA', 'AS', 'ASIA', 'ASSOCIATES', 'AT',
-                'AU', 'AW', 'AX', 'AXA', 'AZ',
-                'BA', 'BAR', 'BARGAINS', 'BAYERN', 'BB', 'BD', 'BE', 'BERLIN', 'BEST', 'BF', 'BG', 'BH',
-                'BI', 'BID', 'BIKE', 'BIZ', 'BJ', 'BLACK', 'BLACKFRIDAY', 'BLUE', 'BM', 'BN', 'BO',
-                'BOUTIQUE', 'BR', 'BS', 'BT', 'BUILD', 'BUILDERS', 'BUZZ', 'BV', 'BW', 'BY', 'BZ',
-                'CA', 'CAB', 'CAMERA', 'CAMP', 'CAPITAL', 'CARDS', 'CARE', 'CAREER', 'CAREERS', 'CASH',
-                'CAT', 'CATERING', 'CC', 'CD', 'CENTER', 'CEO', 'CF', 'CG', 'CH', 'CHEAP', 'CHRISTMAS',
-                'CI', 'CITIC', 'CK', 'CL', 'CLEANING', 'CLINIC', 'CLOTHING', 'CLUB', 'CM', 'CN', 'CO',
-                'CODES', 'COFFEE', 'COLLEGE', 'COLOGNE', 'COM', 'COMMUNITY', 'COMPANY', 'COMPUTER', 'CONDOS',
-                'CONSTRUCTION', 'CONSULTING', 'CONTRACTORS', 'COOKING', 'COOL', 'COOP', 'COUNTRY', 'CR',
-                'CREDITCARD', 'CRUISES', 'CU', 'CV', 'CW', 'CX', 'CY', 'CZ',
-                'DANCE', 'DATING', 'DE', 'DEMOCRAT', 'DENTAL', 'DESI', 'DIAMONDS', 'DIRECTORY', 'DISCOUNT',
-                'DJ', 'DK', 'DM', 'DNP', 'DO', 'DOMAINS', 'DZ',
-                'EC', 'EDU', 'EDUCATION', 'EE', 'EG', 'EMAIL', 'ENGINEERING', 'ENTERPRISES', 'EQUIPMENT',
-                'ER', 'ES', 'ESTATE', 'ET', 'EU', 'EUS', 'EVENTS', 'EXCHANGE', 'EXPERT', 'EXPOSED',
-                'FAIL', 'FARM', 'FEEDBACK', 'FI', 'FINANCE', 'FINANCIAL', 'FISH', 'FISHING', 'FITNESS',
-                'FJ', 'FK', 'FLIGHTS', 'FLORIST', 'FM', 'FO', 'FOO', 'FOUNDATION', 'FR', 'FROGANS', 'FUND',
-                'FURNITURE', 'FUTBOL',
-                'GA', 'GAL', 'GALLERY', 'GB', 'GD', 'GE', 'GF', 'GG', 'GH', 'GI', 'GIFT', 'GL', 'GLASS',
-                'GLOBO', 'GM', 'GMO', 'GN', 'GOP', 'GOV', 'GP', 'GQ', 'GR', 'GRAPHICS', 'GRATIS', 'GRIPE',
-                'GS', 'GT', 'GU', 'GUITARS', 'GURU', 'GW', 'GY',
-                'HAUS', 'HK', 'HM', 'HN', 'HOLDINGS', 'HOLIDAY', 'HORSE', 'HOUSE', 'HR', 'HT', 'HU',
-                'ID', 'IE', 'IL', 'IM', 'IMMOBILIEN', 'IN', 'INDUSTRIES', 'INFO', 'INK', 'INSTITUTE',
-                'INSURE', 'INT', 'INTERNATIONAL', 'INVESTMENTS', 'IO', 'IQ', 'IR', 'IS', 'IT',
-                'JE', 'JETZT', 'JM', 'JO', 'JOBS', 'JP',
-                'KAUFEN', 'KE', 'KG', 'KH', 'KI', 'KIM', 'KITCHEN', 'KIWI', 'KM', 'KN', 'KOELN', 'KP',
-                'KR', 'KRED', 'KW', 'KY', 'KZ',
-                'LA', 'LAND', 'LB', 'LC', 'LEASE', 'LI', 'LIGHTING', 'LIMITED', 'LIMO', 'LINK', 'LK',
-                'LONDON', 'LR', 'LS', 'LT', 'LU', 'LUXURY', 'LV', 'LY',
-                'MA', 'MAISON', 'MANAGEMENT', 'MANGO', 'MARKETING', 'MC', 'MD', 'ME', 'MEDIA', 'MEET',
-                'MENU', 'MG', 'MH', 'MIAMI', 'MIL', 'MK', 'ML', 'MM', 'MN', 'MO', 'MOBI', 'MODA', 'MOE',
-                'MONASH', 'MOSCOW', 'MP', 'MQ', 'MR', 'MS', 'MT', 'MU', 'MUSEUM', 'MV', 'MW', 'MX', 'MY', 'MZ',
-                'NA', 'NAGOYA', 'NAME', 'NC', 'NE', 'NET', 'NEUSTAR', 'NF', 'NG', 'NI', 'NINJA', 'NL',
-                'NO', 'NP', 'NR', 'NU', 'NYC', 'NZ',
-                'OKINAWA', 'OM', 'ONL', 'ORG',
-                'PA', 'PARIS', 'PARTNERS', 'PARTS', 'PE', 'PF', 'PG', 'PH', 'PHOTO', 'PHOTOGRAPHY',
-                'PHOTOS', 'PICS', 'PICTURES', 'PINK', 'PK', 'PL', 'PLUMBING', 'PM', 'PN', 'POST',
-                'PR', 'PRO', 'PRODUCTIONS', 'PROPERTIES', 'PS', 'PT', 'PUB', 'PW', 'PY',
-                'QA', 'QPON', 'QUEBEC',
-                'RE', 'RECIPES', 'RED', 'REISEN', 'REN', 'RENTALS', 'REPAIR', 'REPORT', 'REST',
-                'REVIEWS', 'RICH', 'RO', 'ROCKS', 'RODEO', 'RS', 'RU', 'RUHR', 'RW', 'RYUKYU',
-                'SA', 'SAARLAND', 'SB', 'SC', 'SCHULE', 'SD', 'SE', 'SERVICES', 'SEXY', 'SG', 'SH',
-                'SHIKSHA', 'SHOES', 'SI', 'SINGLES', 'SJ', 'SK', 'SL', 'SM', 'SN', 'SO', 'SOCIAL',
-                'SOHU', 'SOLAR', 'SOLUTIONS', 'SOY', 'SR', 'ST', 'SU', 'SUPPLIES', 'SUPPLY', 'SUPPORT',
-                'SURGERY', 'SV', 'SX', 'SY', 'SYSTEMS', 'SZ',
-                'TATTOO', 'TAX', 'TC', 'TD', 'TECHNOLOGY', 'TEL', 'TF', 'TG', 'TH', 'TIENDA', 'TIPS',
-                'TJ', 'TK', 'TL', 'TM', 'TN', 'TO', 'TODAY', 'TOKYO', 'TOOLS', 'TOWN', 'TOYS', 'TP',
-                'TR', 'TRADE', 'TRAINING', 'TRAVEL', 'TT', 'TV', 'TW', 'TZ',
-                'UA', 'UG', 'UK', 'UNIVERSITY', 'UNO', 'US', 'UY', 'UZ',
-                'VA', 'VACATIONS', 'VC', 'VE', 'VEGAS', 'VENTURES', 'VG', 'VI', 'VIAJES', 'VILLAS',
-                'VISION', 'VN', 'VODKA', 'VOTE', 'VOTING', 'VOTO', 'VOYAGE', 'VU',
-                'WANG', 'WATCH', 'WEBCAM', 'WED', 'WF', 'WIEN', 'WIKI', 'WORKS', 'WS', 'WTC', 'WTF',
-                'XN--3BST00M', 'XN--3DS443G', 'XN--3E0B707E', 'XN--45BRJ9C', 'XN--55QW42G', 'XN--55QX5D',
-                'XN--6FRZ82G', 'XN--6QQ986B3XL', 'XN--80ADXHKS', 'XN--80AO21A', 'XN--80ASEHDB', 'XN--80ASWG',
-                'XN--90A3AC', 'XN--C1AVG', 'XN--CG4BKI', 'XN--CLCHC0EA0B2G2A9GCD', 'XN--CZRU2D', 'XN--D1ACJ3B',
-                'XN--FIQ228C5HS', 'XN--FIQ64B', 'XN--FIQS8S', 'XN--FIQZ9S', 'XN--FPCRJ9C3D', 'XN--FZC2C9E2C',
-                'XN--GECRJ9C', 'XN--H2BRJ9C', 'XN--I1B6B1A6A2E', 'XN--IO0A7I', 'XN--J1AMH',
-                'XN--J6W193G', 'XN--KPRW13D', 'XN--KPRY57D', 'XN--L1ACC', 'XN--LGBBAT1AD8J', 'XN--MGB9AWBF',
-                'XN--MGBA3A4F16A', 'XN--MGBAAM7A8H', 'XN--MGBAB2BD', 'XN--MGBAYH7GPA', 'XN--MGBBH1A71E',
-                'XN--MGBC0A9AZCG', 'XN--MGBERP4A5D4AR', 'XN--MGBX4CD0AB', 'XN--NGBC5AZD', 'XN--NQV7F',
-                'XN--NQV7FS00EMA', 'XN--O3CW4H', 'XN--OGBPF8FL', 'XN--P1AI', 'XN--PGBS0DH', 'XN--Q9JYB4C',
-                'XN--RHQV96G', 'XN--S9BRJ9C', 'XN--SES554G', 'XN--UNUP4Y', 'XN--WGBH1C', 'XN--WGBL6A',
-                'XN--XKC2AL3HYE2A', 'XN--XKC2DL3A5EE0H', 'XN--YFRO4I67O', 'XN--YGBI2AMMX', 'XN--ZFR164B',
-                'XXX', 'XYZ',
-                'YE', 'YOKOHAMA', 'YT',
-                'ZA', 'ZM', 'ZONE', 'ZW'
-                ]
-            }
+        'effective-tlds': {
+            'data':None, # indicates not yet loaded
+            'url':'https://publicsuffix.org/list/effective_tld_names.dat',
+            'resource':'effective_tld_names.dat',
+            'file':os.path.join(NETDNS_CONFIGURATION_DIR,'effective_tld_names.dat') \
+                    if NETDNS_CONFIGURATION_DIR is not None else None
+        },
+        'public-resolvers': {
+            'data':None, # indicates not yet loaded
+            'url':'file:///%s/public_resolvers.json' % (os.path.dirname(__file__)),
+            'resource':'public_resolvers.json',
+            'file':os.path.join(NETDNS_CONFIGURATION_DIR,'public_resolvers.json') \
+                    if NETDNS_CONFIGURATION_DIR is not None else None
         }
-    ACTIVE=None
+    }
+    _normal_suffixes=None
+    _wildcard_suffixes=None
+    _iana_tld_set=None
+    _public_resolvers_by_tag=None
+    _public_resolvers_by_ip=None
     
+    @classproperty
+    def example(cls):
+        return "Ok!"
+        
     @classmethod
-    def get_default_nameserver(cls):
-        return ipaddress.ip_address('8.8.8.8')
-    @classmethod
-    def refresh_tld_list(cls):
-        """Try to refresh the TLD list from a remote source, if unable to
-        then use the hardcoded values.
+    def _load_raw_resource(cls,name):
         """
-        try:
-            data=urlopen(Request(tld_iana_url)).read()
-            ACTIVE['tld']['map']=[]
+        Return the raw data from a configuration file if it has previously
+        been loaded, otherwise load it from either an external file or a
+        package resident resource, cache it for later returns, and then
+        return it.
+        
+        :param name: the name of the resource to be loaded, corresponding to an
+                    index in the NetDNSConfiguration.configuration_files map
+        """
+        config=cls.configuration_files.get(name)
+        if config==None:
+            raise Exception("Unknown configuration resource '%s', must be one of %s" % (name,sorted(cls.configuration_files.keys())))
+        if config['data']==None:
+            if config['file']!=None:
+                with open(config['file'],'r') as fin:
+                    config['data']=fin.read()
+            else:
+                data=pkg_resources.resource_string(__name__,config['resource'])
+                config['data']=data.decode('utf-8')
+        return config['data']
+        
+    @classmethod
+    def refresh_resource(cls,name):
+        """
+        Refresh the named resource
+        """
+        config=cls.configuration_files.get(name)
+        if config==None:
+            raise Exception("Unknown configuration resource '%s', must be one of %s" % (name,sorted(cls.configuration_files.keys())))
+        if cls.NETDNS_CONFIGURATION_DIR==None:
+            raise Exception("You can not download external configuraiton files from %s, without setting the NETDNS_CONFIGURATION_DIR environment variable" % (config['url']))
+        data=urlopen(Request(config['url'])).read()
+        with open(config['file'],'w') as fout:
+            fout.write(data)
+        config['data']=None
+
+    @classproperty
+    def raw_iana_tlds(cls):
+        return cls._load_raw_resource("iana-tlds").lower()
+
+    @classproperty
+    def raw_public_resolvers(cls):
+        return cls._load_raw_resource("public-resolvers").lower()
+
+    @classproperty
+    def raw_effective_tlds(cls):
+        return cls._load_raw_resource("effective-tlds").lower()
+
+    @classmethod
+    def _split_effective_tld_list_into_normal_and_wildcard_sets(cls):
+        """ splits the data in the raw effictive tld file into two sets
+        depending upon whether or not there is a wildcard character... for
+        example, *.bd is an effective TLD, but .bd itself is not a valid
+        effective TLD, it is only a TLD by IANA standards. """
+        raw_data=cls.raw_effective_tlds
+        
+        lines = filter(lambda x: not re.match('(^\s*$)|(\s*//)',x),
+                       raw_data.split('\n'))
+
+        cls._normal_suffixes = set()
+        cls._wildcard_suffixes = set()
+
+        for item in lines:
+            if item.startswith('*.'):
+                cls._wildcard_suffixes.add(item[2:])
+            else:
+                cls._normal_suffixes.add(item)
+                    
+    @classproperty
+    def normal_suffixes(cls):
+        if cls._normal_suffixes==None:
+            cls._split_effective_tld_list_into_normal_and_wildcard_sets()
+        return cls._normal_suffixes
+        
+    @classproperty
+    def wildcard_suffixes(cls):
+        if cls._wildcard_suffixes==None:
+            cls._split_effective_tld_list_into_normal_and_wildcard_sets()
+        return cls._wildcard_suffixes
+        
+
+    @classproperty
+    def iana_tld_set(cls):
+        if cls._iana_tld_set==None:
+            newset=set()
+            data=cls.raw_iana_tlds
             for line in data.split("\n"):
                 line=line.strip()
-                if not line.startswith("#"):
-                    ACTIVE['tld']['map'].append(line)
-        except:
-            pass
-
+                if line!='' and not line.startswith("#"):
+                    newset.add(line)
+            cls._iana_tld_set=newset
+        return cls._iana_tld_set
 
     @classmethod
-    def initialize(cls):
-        cls.ACTIVE=copy.copy(cls.FALLBACK)
+    def _internalize_public_resolvers(cls):
+        raw=cls.raw_public_resolvers
         
+        by_tag={}
+        by_ip={}
+        for tag,defn in json.loads(raw):
+            by_tag[tag]=defn['addrs']
+            for addr in defn['addrs']:
+                by_ip[addr]=tag
+        return (by_tag,by_ip)
         
-NetDNSConfiguration.initialize()
+    @classproperty
+    def public_resolvers_by_tag(cls):
+        if cls._public_resolvers_by_tag==None:
+            cls._internalize_public_resolvers()
+        return cls._public_resolvers_by_tag
+
+    @classproperty
+    def public_resolvers_by_ip(cls):
+        if cls._public_resolvers_by_ip==None:
+            cls._internalize_public_resolvers()
+        return cls._public_resolvers_by_ip
+
+
+    # fallback resolver to use when none is specified in any
+    # other way.
+    DEFAULT_NS=ipaddress.ip_address('8.8.8.8')
+    @classmethod
+    def get_default_nameserver(cls):
+        return cls.DEFAULT_NS
+
+        

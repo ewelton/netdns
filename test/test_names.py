@@ -27,5 +27,3 @@ class TestCase(unittest.TestCase):
         result=dns.undotify('a.')
         assert result=="a"
 
-    def test_a00_split(self):
-        pass

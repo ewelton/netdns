@@ -55,10 +55,9 @@ kwargs = {
     'scripts':[],
     'entry_points': '''
         [console_scripts]
-        ds=hyperdns.netdns.cli:scan
+        hyper=hyperdns.netdns.cli:main
         dq=hyperdns.netdns.cli:query
         dx=hyperdns.netdns.cli:xlate
-        dserve=hyperdns.netdns.cli:serve
         dm=hyperdns.netdns.cli:merge
         dv=hyperdns.netdns.cli:validate
     ''',

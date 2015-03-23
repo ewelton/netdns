@@ -1,18 +1,12 @@
-from .recordtype import RecordType
-from .recordspec import RecordSpec
-from hyperdns.netdns import ResourceRecordTypeClash,ResourceRecordSourceClash
+from hyperdns.netdns import (
+    ResourceRecordTypeClash,
+    ResourceRecordSourceClash,
+    RecordType,
+    RecordSpec,
+    RFC2181Violation,
+    TTLIsNotPreferredException
+    )
 
-class RFC2181Violation(Exception):
-    """Indicates that the resource record set does not have a common
-    TTL, as defined in :rfc:`2181#5.2`
-    """
-    pass
-
-class TTLIsNotPreferredException(Exception):
-    """Indicates that a resource record set has a common TTL in it's
-    records, but is not.
-    """
-    pass
     
 class RecordSet(set):
     """ Encapsulates a set of records of a given type, optionally from a

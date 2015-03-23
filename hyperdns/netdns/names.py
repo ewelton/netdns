@@ -2,59 +2,39 @@ import pkg_resources
 import re
 import ipaddress
 from hyperdns.netdns import ZoneFQDNTooLong, NodeNameComponentTooLong
+from .config import NetDNSConfiguration
+
 
 def dotify(name):
-    """ Add a dot to the end of the name if it wasn't there.
+    """
+    Add a dot to the end of the name if it wasn't there.
+    
+    :param name: the name to which a dot should be added if it wasn't there
+    :type name: string
+    :returns: The name with a dot at the end
     """
     if not name.endswith("."):
         return "%s." % name
     return name
 
 def undotify(name):
+    """
+    Remove a dot from the end of a name if it was there.
+    
+    :param name: the name to which a dot should be removed if it was there
+    :type name: string
+    :returns: The name without a dot at the end
+    """
     if name.endswith("."):
         return name[:-1]
     return name
 
-
-def is_valid_zone_fqdn(zone_fqdn):
-    if zone_fqdn==None:
-        return False
-    return zone_fqdn.endswith(".")       
-
-def fqdn(name,zone=None):
-    """ This produces a string version of a name that is dot terminated
-        and ends with the trailing zone.  If the name already ends with
-        the zone name, it is not appended.  For example
-
-            (a) -> a.
-            (a.) -> a.
-            (a,example.com) -> a.example.com.
-            (a.example.com,example.com) -> a.example.com.
-
-        the return value is ascii, not unicode
-
-        Note: does not detect multi
-    """
-    # ensure trailing dot
-    if not name.endswith('.'):
-        # add zone if required, ensuring dot
-        if zone==None:
-            name+='.'
-        else:
-            if not zone.endswith('.'):
-                if name.endswith(zone):
-                    name=name+'.'
-                else:
-                    name=name+'.'+zone+'.'
-            else:
-                name+='.'
-                if not name.endswith(zone):
-                    name=name+zone
-
-    return name
-
 class RnameZone:
-
+    """
+    An container for a pair of strings representing the resource name and
+    the zone component of a fully qualified resource name.
+    
+    """
     def __init__(self,rname,zone):
         self.rname = rname
         self.zone = zone
@@ -77,14 +57,20 @@ class RnameZone:
     def __getitem__(self,key):
         return list(self)[key]
 
-
-def splitFqdn(fqdn):
-    return TLDs.splitRnameZone(fqdn)
-
 def domain_components(name):
+    # assuming the same as: list(filter(lambda x: x != '',name.split('.')))
     return list(filter(lambda x: len(x) > 0,name.split('.')))
-
+    
 def splitFqdnInZone(fqdn,zone):
+    """
+    If the zone is known, why not simply remove the zone from the end?
+    
+    f=dotify(fqdn)
+    z=dotify(zone)
+    if f.endswith(z):
+        return RnameZone(f[:-len(z)-1],z)
+    return RnameZone(None,None)
+    """
     fparts = domain_components(fqdn)
     zparts = domain_components(zone)
 
@@ -111,29 +97,18 @@ def splitFqdnInZone(fqdn,zone):
 
     return RnameZone(rname,zone)
 
-def isIPAddress(address):
-    try:
-        ipaddress.ip_address(address)
-        return True
-    except ValueError as E:
-        return False
+class IANATLDs(object):
+    """
+    Class supporting tests against the IANA specified list of core TLDs, which
+    are recognized by the root nameservers.
+    """
 
-def isIPv4Address(address):
-    try:
-        ip = ipaddress.ip_address(address)
-        return isinstance(ip,ipaddress.IPv4Address)
-    except ValueError as E:
-        return False
-
-def isIPv6Address(address):
-    try:
-        ip = ipaddress.ip_address(address)
-        return isinstance(ip,ipaddress.IPv6Address)
-    except ValueError as E:
-        return False
-
-class TLDs:
-
+class EffectiveTLDs(object):
+    """
+    Class supporting tests against the publicsuffix.org managed list of effective
+    top level domains.  This differs from the IANA TLD list, which is the strict
+    interpretation of "Top Level Domain"
+    """
     _setup_done = False
     _normal_suffixes = None
     _wildcard_suffixes = None
@@ -142,30 +117,18 @@ class TLDs:
     def _setup(cls):
         if cls._setup_done:
             return
-
-        # https://publicsuffix.org/list/effective_tld_names.dat
-        suffix_data = pkg_resources.resource_string(__name__,'effective_tld_names.dat')
-        suffix_str = suffix_data.decode('utf-8')
-        lines = filter(lambda x: not re.match('(^\s*$)|(\s*//)',x),
-                       suffix_str.split('\n'))
-
-        cls._normal_suffixes = set()
-        cls._wildcard_suffixes = set()
-
-        for item in lines:
-            if item.startswith('*.'):
-                cls._wildcard_suffixes.add(item[2:])
-            else:
-                cls._normal_suffixes.add(item)
-
+        cls._normal_suffixes = NetDNSConfiguration.normal_suffixes
+        cls._wildcard_suffixes = NetDNSConfiguration.wildcard_suffixes
         cls._setup_done = True
 
     @classmethod
     def isNormalSuffix(cls,components):
+        cls._setup()
         return '.'.join(components) in cls._normal_suffixes
 
     @classmethod
     def isWildcardSuffix(cls,components):
+        cls._setup()
         return '.'.join(components[1:]) in cls._wildcard_suffixes
 
     @classmethod
@@ -179,172 +142,103 @@ class TLDs:
         return len(components) >= 1 and '.'.join(components) in cls._wildcard_suffixes
 
     @classmethod
-    def isTLD(cls,name):
+    def isEffectiveTLD(cls,name_or_components):
+        """
+        Checks to see if name_or_components is a complete suffix matching
+        either one of the normal suffixes, or if it matches a wildcard
+        suffix, of the form <something>.<wildcard_suffix> where wildcard_suffix
+        is a suffix of the form *.<suffix> (for example *.bd, or *.nagoya.jp)
+        
+        :param name_or_components: the string or string array to test
+        :type name_or_components: either a string, or an pre-broken array of
+                                  components.
+        """
         cls._setup()
-        components = list(filter(lambda x: x != '',name.split('.')))
+        if isinstance(name_or_components,str):
+            components = domain_components(name_or_components)
+        else:
+            components = name_or_components
         if len(components) == 0:
             return False
         return cls._isNormalSuffix(components) or cls._isWildcardSuffix(components[1:])
 
     @classmethod
-    def isZone(cls,name):
-        components = list(filter(lambda x: x != '',name.split('.')))
-        if cls.isTLD(name) or cls._isWildcardSuffix(components):
-            return False # e.g. co.uk; .uk is a TLD but .co.uk is also a TLD
-        if len(components) == 0:
-            return False
-        return cls.isTLD('.'.join(components[1:]))
-
-    @classmethod
     def splitRnameZone(cls,name):
-        if cls.isTLD(name):
-            return RnameZone(None,name)
-        components = list(filter(lambda x: x != '',name.split('.')))
-        if cls.isZone(name):
-            return RnameZone('@','.'.join(components)+'.')
-        for i in range(0,len(components)-1):
-            partial = '.'.join(components[i:])
-            if cls.isZone(partial):
-                rname = '.'.join(components[0:i])
-                zone = partial+'.'
+        """
+        Perform a best guess as to how to split a name into a 'host' and a 'domain'.  This
+        can not be accurate all the time, but it can make a reasonable estimates based
+        on the list of 'effective tlds' provided by publicsuffix.org.
+        
+        The algorithm is as follows:
+        1 - normalize the name so that it is fully qualified (e.g. 'dot ending')
+        2 - split the name into an array of components
+        3 - check to see if the name itself matches any effective TLD, if the
+            name matches a known TLD, then this references the domain itself
+            so we return the pair ('@',name)
+            note: this includes wildcard domains of the form *.<something>
+            which would be matched by tld.<something>
+        4 - now, start scanning each subset of the components, skipping the
+            first component to find the longest match that is itself an effective TLD
+            if we find a match, against all but the first component, then the
+            correct response is ('@',name) - this handles the case of wildcard
+            domains, such as *.nagoya.jp, where, for example, test.nagoya.jp is
+            an effective TLD, so we assume that <something>.test.nagoya.jp is
+            itself a domain - since anything registered under <something>.test.nagoya.jp
+            should be a domain, under which other hosts are registered.
+        
+        Note:     
+        
+        Note: PEP8 prefers function and method names with underscores and not camelcase.  CamelCase is preferred for classes.  See https://www.python.org/dev/peps/pep-0008/"
+        """
+        
+        # first, we 
+        name=dotify(name)
+        components = domain_components(name)
+
+        if cls.isEffectiveTLD(components):
+            return RnameZone('@',name)
+            
+        for i in range(0,len(components)):
+            partial = components[i:]
+            if cls._isWildcardSuffix(partial[1:]):
+                zone = '.'.join(components[i-1:])+'.'
+                if i==1:
+                    rname='@'
+                else:
+                    rname = '.'.join(components[0:i-1])
+                return RnameZone(rname,zone)
+            elif cls._isNormalSuffix(partial):
+                if i==1:
+                    rname=components[0]
+                else:
+                    rname = '.'.join(components[0:i-1])
+                zone = '.'.join(components[i:])+'.'
+                print("NORMAL SUFFIX",partial,rname,zone,i)
                 return RnameZone(rname,zone)
         return RnameZone(None,None)
 
-class NodeName(object):
+
+def is_valid_zone_fqdn(zone_fqdn):
+    """Determines if the zone_fqdn is a viable fully qualified zone
+    name.  This means it must end with a dot, and the suffix must be
+    one of the effective EffectiveTLDs.
+    
+    :param zone_fqdn: the potential fqdn in question
+    :type zone_fqdn: string
+    :returns True: if the....
+    :returns False: if the...
     """
-    Container for DNS label
-
-    Supports IDNA encoding for unicode domain names
+    if not zone_fqdn.endswith("."):
+        return False
+    rnameZone=TLDS.splitRnameZone(zone_fqdn)
+    return rnameZone.isValid()
+    
+def splitFqdn(fqdn):
+    """
+    
+    Note: PEP8 prefers function and method names with underscores and not camelcase.  CamelCase is preferred for classes.  See https://www.python.org/dev/peps/pep-0008/"
 
     """
-    def __init__(self,label):
-        """
-            Create DNS label instance 
-
-            Label can be specified as:
-            - a list/tuple of byte strings
-            - a byte string (split into components separated by b'.')
-            - a unicode string which will be encoded according to RFC3490/IDNA
-        """
-        if type(label) == NodeName:
-            self.label = label.label
-        elif type(label) in (list,tuple):
-            self.label = tuple(label)
-        else:
-            if not label or label in (b'.','.'):
-                self.label = ()
-            elif type(label) is not bytes:
-                self.label = tuple(label.encode("idna").\
-                                rstrip(b".").split(b"."))
-            else:
-                self.label = tuple(label.rstrip(b".").split(b"."))
+    return EffectiveTLDs.splitRnameZone(fqdn)
 
 
-    def idna(self):
-        return ".".join([ s.decode("idna") for s in self.label ]) + "."
-
-    def __str__(self):
-        return ".".join([ s.decode() for s in self.label ]) + "."
-
-    def __repr__(self):
-        return "<NodeName: '%s'>" % str(self)
-
-    def __hash__(self):
-        return hash(self.label)
-
-    def __ne__(self,other):
-        return not self == other
-
-    def __eq__(self,other):
-        if type(other) != NodeName:
-            return self.__eq__(NodeName(other))
-        else:
-            return [ l.lower() for l in self.label ] == \
-                   [ l.lower() for l in other.label ]
-
-    def __len__(self):
-        return len(b'.'.join(self.label))
-
-
-    def decode_name(self,last=-1):
-        """
-            Decode label at current offset in buffer (following pointers
-            to cached elements where necessary)
-        """
-        label = []
-        done = False
-        while not done:
-            (length,) = self.unpack("!B")
-            if get_bits(length,6,2) == 3:
-                # Pointer
-                self.offset -= 1
-                pointer = get_bits(self.unpack("!H")[0],0,14)
-                save = self.offset
-                if last == save:
-                    raise BufferError("Recursive pointer in NodeName [offset=%d,pointer=%d,length=%d]" % 
-                            (self.offset,pointer,len(self.data)))
-                if pointer < self.offset:
-                    self.offset = pointer
-                else:
-                    # Pointer can't point forwards
-                    raise BufferError("Invalid pointer in NodeName [offset=%d,pointer=%d,length=%d]" % 
-                            (self.offset,pointer,len(self.data)))
-                label.extend(self.decode_name(save).label)
-                self.offset = save
-                done = True
-            else:
-                if length > 0:
-                    l = self.get(length)
-                    try:
-                        l.decode()
-                    except UnicodeDecodeError:
-                        raise BufferError("Invalid label <%s>" % l)
-                    label.append(l)
-                else:
-                    done = True
-        return NodeName(label)
-
-    def encode_name(self,name):
-        """
-            Encode label and store at end of buffer (compressing
-            cached elements where needed) and store elements
-            in 'names' dict
-        """
-        if not isinstance(name,NodeName):
-            name = NodeName(name)
-        if len(name) > 253:
-            raise ZoneFQDNTooLong("Domain label too long: %r" % name)
-        name = list(name.label)
-        while name:
-            if tuple(name) in self.names:
-                # Cached - set pointer
-                pointer = self.names[tuple(name)]
-                pointer = set_bits(pointer,3,14,2)
-                self.pack("!H",pointer)
-                return
-            else:
-                self.names[tuple(name)] = self.offset
-                element = name.pop(0)
-                if len(element) > 63:
-                    raise NodeNameComponentTooLong("Label component too long: %r" % element)
-                self.pack("!B",len(element))
-                self.append(element)
-        self.append(b'\x00')
-
-    def encode_name_nocompress(self,name):
-        """
-            Encode and store label with no compression 
-            (needed for RRSIG)
-        """
-        if not isinstance(name,NodeName):
-            name = NodeName(name)
-        if len(name) > 253:
-            raise ZoneFQDNTooLong("Domain label too long: %r" % name)
-        name = list(name.label)
-        while name:
-            element = name.pop(0)
-            if len(element) > 63:
-                raise NodeNameComponentTooLong("Label component too long: %r" % element)
-            self.pack("!B",len(element))
-            self.append(element)
-        self.append(b'\x00')

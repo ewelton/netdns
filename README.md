@@ -20,4 +20,6 @@ type the following:
 ```
 
 
+# Testing Note:
+nosetests --with-isolation test/test_config*
 

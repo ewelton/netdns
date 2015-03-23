@@ -13,7 +13,8 @@ The CLI utilities are defined in setup.py as follows::
 
     dq=hyperdns.netdns.cli:query
     dx=hyperdns.netdns.cli:xlate
-    ds=hyperdns.netdns.cli:serve
+    ds=hyperdns.netdns.cli:scan
+    dserve=hyperdns.netdns.cli:serve
     dm=hyperdns.netdns.cli:merge
     dv=hyperdns.netdns.cli:validate
 		
@@ -110,13 +111,30 @@ Command Help Text::
 	  --bind          Emit bind file instead of json
 	  --help          Show this message and exit.
 
-ds - Serve
+ds - scan
+----------------
+Bulk scan
+
+Command Help Text::
+
+	Usage: ds [OPTIONS]
+
+	  Look up information about one or more hosts on multiple servers
+
+	Options:
+	  --type TEXT         Type of records to look for
+	  --host TEXT         Type of records to look for
+	  --hosts FILENAME    List of IPs to look up
+	  --servers FILENAME  List of Nameservers to use  [required]
+	  --help              Show this message and exit.
+  
+dserve - Serve
 ----------------
 This utility supports testing DNS lookups by providing a simple server.
 
 Command Help Text::
 
-	(.python)hyperdns-netdns-python3 : ds --help
+	(.python)hyperdns-netdns-python3 : dserve --help
 	Usage: ds [OPTIONS]
 
 	  Start a server on port 15353

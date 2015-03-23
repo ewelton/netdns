@@ -11,7 +11,8 @@ from hyperdns.netdns import (
     InvalidMXPriority,
     MalformedSOARecord,
     MalformedSOAEmail,
-    MalformedPresence
+    MalformedPresence,
+    UnsupportedRecordType
     )
     
 
@@ -132,8 +133,10 @@ class RecordSpec(object):
                 raise MalformedRecordException(E)
             except MalformedTTLException:
                 raise
+            except UnsupportedRecordType:
+                raise
             except Exception as E:
-                print(E)
+                print("Problem setting recordspec from json:%s" % E)
                 #raise MalformedRecordException()
                 raise E
             
@@ -277,11 +280,15 @@ class RecordSpec(object):
                     if not _validate_and_set_SOA(self,value):
                         raise MalformedRecordException("Something about soa not right:%s" % value)
                 else:
-                    raise MalformedRecordException("Unsupported Record type:%s, rdata=%s" % (self.rdtype,value))
+                    raise UnsupportedRecordType("Unsupported Record type:%s, rdata=%s" % (self.rdtype,value))
                 self._rdata=value
                 return self._rdata
+            except UnsupportedRecordType as E:
+                raise
+            except MalformedRecordException as E:
+                raise
             except Exception as E:
-                raise MalformedRecordException()
+                raise MalformedRecordException("Unknown exception during processing of rdata:E=%s" % E)
 
 
         def _set_rdtype(self,value):
