@@ -3,3 +3,4 @@ from .xlate import xlate
 from .serve import serve
 from .merge import merge
 from .validate import validate
+from .scan import scan
