@@ -198,7 +198,7 @@ class TLDs:
     @classmethod
     def splitRnameZone(cls,name):
         if cls.isTLD(name):
-            return RnameZone(None,None)
+            return RnameZone(None,name)
         components = list(filter(lambda x: x != '',name.split('.')))
         if cls.isZone(name):
             return RnameZone('@','.'.join(components)+'.')
