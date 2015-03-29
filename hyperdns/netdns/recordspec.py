@@ -230,7 +230,7 @@ class RecordSpec(object):
             self._soa_ns=parts[0]
             _email=parts[1]
             #print("EMAIL:",_email)
-            _email2=_email.split(".",2)
+            _email2=_email.split(".",1)
             if len(_email2)<2:
                 if len(_email2)==1:
                     _email2=[_email2[0],"self.fqdn"]
