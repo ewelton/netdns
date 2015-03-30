@@ -1,5 +1,6 @@
 from .recordtype import RecordType
 from .recordspec import RecordSpec
+from .recordclass import RecordClass
 
 class ResourceTree:
 
@@ -20,12 +21,31 @@ class ResourceTree:
                 self._get_leaves_recursive(entry.node,result)
 
     def print(self,indent=''):
-        print(indent+self.root.kind)
-        self._print_entries(self.root.members,indent=indent+'    ')
+        if isinstance(self.root,RecordNode):
+            print(indent+'Record '+str(self.root))
+        else:
+            print(indent+self.root.kind)
+            self._print_entries(self.root.members,indent=indent+'    ')
 
     def _print_entries(self,members,indent=''):
+        max_info_len = 0
         for node in members:
-            line = indent+str(node.info)+': '+node.kind
+            if node.info != None:
+                info_str = str(node.info)+':'
+            else:
+                info_str = ''
+            if max_info_len < len(info_str):
+                max_info_len = len(info_str)
+
+        for node in members:
+            if node.info != None:
+                info_str = str(node.info)+':'
+            else:
+                info_str = ''
+
+            info_pad = ' '*(max_info_len-len(info_str))
+            line = indent+info_str+info_pad+' '+node.kind
+
             if isinstance(node,RecordNode):
                 value = str(node)
             else:
@@ -190,4 +210,8 @@ class RecordNode(ResourceNode):
         self.value = value
 
     def __str__(self):
-        return '%s %s %d'%(RecordType.as_str(self.value.rdtype),self.value.rdata,self.value.ttl)
+        ttl = self.value.ttl
+        rdclass = RecordClass.as_str(self.value.rdclass)
+        rdtype = RecordType.as_str(self.value.rdtype)
+        rdata = self.value.rdata
+        return '%d %s %s %s'%(ttl,rdclass,rdtype,rdata)
