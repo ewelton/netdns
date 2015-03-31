@@ -108,29 +108,31 @@ class NetDNSResolver(object):
             raise AddressNotFound("Address Not Found - lookup failed for '%s'" % resolver)
         else:
             return None
-
-    @classmethod
-    def get_nameservers_for_zone(cls,fqdn,nameserver=None):
-        """Return the nameserver names for a domain, if no nameserver is provided, the
-        default nameserver is used.
-        
-        
-        """
-        if nameserver==None:
-            nameserver=NetDNSConfiguration.get_default_nameserver()
-        return cls.query_nameserver(fqdn,nameserver,rtype=RecordType.NS)
     
     @classmethod
     def query_resolver(cls,host,resolver,recursive=True,
                             triesRemaining=1,format=None,rtype=RecordType.ANY):
-        """look up a host at a specific nameserver, returning either a RecordPool
-        or a Bortzmeyer JSON result.
+        """
+        Look up a host at a specific nameserver, returning either a RecordPool,
+        a Bortzmeyer JSON result, or a tuple of records.
         
         :param host: host or domain name to query
-        :param nameserver: the resolver to query
+        :param resolver: the resolver to query
+        :param recursive: whether or not to ask for recursive resolution
+        :param triesRemaining: the total number of tries in the event of a failed response
+        :param format: the format to return
+        :param rtype: the type to query
         
         :type host: string
-
+        :type resolver: either an IPv4Address, IPv6Address, string containing on
+                        of those addresses, or a string naming a resolver to use.
+        :type recursive: boolean
+        :type triesRemaining: integer
+        :type rtype: RecordType, string or integer
+        
+        :raises Exception: if an invalid response format is provided
+        :raises Exception: if an invalid rtype is provided
+        :raises UnknownNameserver: if the resolver can not be translated to an address
         
         """
         if format==None:
@@ -138,25 +140,33 @@ class NetDNSResolver(object):
         if not format in cls.ResponseFormat:
             raise Exception("Invalid response format %s" % format)
         
-        result=None
-        
-        # first get 
+        # validate the rtype
+        _rtype=RecordType.as_type(rtype)
+        if _rtype==None:
+            raise Exception("Invalid record type to query")
+            
+                # now get the address of the resolver to use
         try:
             resolver=cls.get_address_for_resolver(resolver)
         except AddressNotFound as E:
             raise UnknownNameserver("Failed to locate resolver '%s'" % resolver)
         resolver="%s" % resolver
         
+        result=None
+
         while triesRemaining>0:
+            start_time=time.time()
             try:
-                query=dns.message.make_query(host,rtype,RecordClass.IN)
+                query=dns.message.make_query(host,_rtype,RecordClass.IN)
                 if not recursive:
                     query.flags &= ~dns.flags.RD
                     
                 response = dns.query.udp(query,resolver,timeout=1)
-
+                end_time=time.time()
+                # generate the appropriate output format
                 if format==cls.ResponseFormat.JSON:
-                    result=cls.format_as_json(response, query.flags, resolver)
+                    result=cls._format_as_json(response, query.flags, resolver)
+                
                 elif format==cls.ResponseFormat.TUPLE:
                     for answer in response.answer:
                         for item in answer.items:
@@ -202,8 +212,9 @@ class NetDNSResolver(object):
 
 
     @classmethod
-    def format_as_json(cls,response, flags, querier):
-        """Format a response according to: http://tools.ietf.org/html/draft-bortzmeyer-dns-json-01 
+    def _format_as_json(cls,response, flags, querier):
+        """
+        Format a response according to: http://tools.ietf.org/html/draft-bortzmeyer-dns-json-01 
         """
         obj = {}
         obj['ReturnCode'] = dns.rcode.to_text(response.rcode())

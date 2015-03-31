@@ -22,7 +22,7 @@ class ScanScheduleEntry(object):
         
 class Scanner(object):
     
-    def __init__(self,concurrency,callback):        
+    def __init__(self,concurrency,callback,retry=3):        
         # link instance and thread variable w/o self reference
         self.schedule=Queue()
 
@@ -34,7 +34,7 @@ class Scanner(object):
                     start_time=time.time()
                     result=NetDNSResolver.query_resolver(
                             entry.host,entry.resolver,rtype=entry.rtype,
-                            recursive=True,triesRemaining=3,
+                            recursive=True,triesRemaining=retry,
                             format=NetDNSResolver.ResponseFormat.NETDNS)
                     duration=time.time()-start_time
                 
@@ -54,3 +54,5 @@ class Scanner(object):
 
     def join(self):
         self.schedule.join()
+
+        

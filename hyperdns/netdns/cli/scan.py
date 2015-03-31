@@ -37,8 +37,10 @@ def scan():
 @click.option('--hosts',type=click.File('r'),default=None,help="List of IPs to look up")
 @click.option('--servers',type=click.File('r'),default=None,required=True,help="List of Nameservers to use")
 @click.option('--concurrency',default=10,help='number of concurrent threads')
+@click.option('--retry',default=3,help='number of times to retry a failed lookup')
+@click.option('--verbose',default=False,is_flag=True,help="Print results to stdout en route")
 @click.pass_context
-def run(ctx,rtype,host,hosts,servers,concurrency,out):
+def run(ctx,rtype,host,hosts,servers,concurrency,out,verbose,retry):
     """Look up information about one or more hosts on multiple servers
     """
     if (hosts==None and host==None) and servers==None:
@@ -75,12 +77,19 @@ def run(ctx,rtype,host,hosts,servers,concurrency,out):
             else:
                 resultmap[host]=RecordPool()
 
+    stats={
+        'count':0,
+        'total':0
+    }
     def process_result(entry,result,duration):
         #print("Result",result,entry,duration)
-        #print("Completed:",entry.host,entry.resolver)
+        if verbose:
+            stats['count']=stats['count']+1
+            print("Completed:%d/%d" % (stats['count'],stats['total']),
+                    entry.host,entry.resolver,result)
         resultmap.get(entry.host).add(result)
         
-    scanner=Scanner(concurrency,process_result)
+    scanner=Scanner(concurrency,process_result,retry=retry)
     
     lineno=0
     for server in servers.readlines():
@@ -93,6 +102,7 @@ def run(ctx,rtype,host,hosts,servers,concurrency,out):
     
     for host in resultmap.keys():
         for server in serverlist:
+            stats['total']=stats['total']+1
             scanner.schedule_lookup(host,server,rtype)
 
     scanner.join()

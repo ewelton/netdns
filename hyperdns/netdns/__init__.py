@@ -136,3 +136,4 @@ from .model import (
     ResourceData,ZoneData
 )
 from .scanner import Scanner
+from .specials import SOA

@@ -208,12 +208,12 @@ class EffectiveTLDs(object):
                     rname = '.'.join(components[0:i-1])
                 return RnameZone(rname,zone)
             elif cls._isNormalSuffix(partial):
-                if i==1:
-                    rname=components[0]
+                if i-2<=1:
+                    rname='@'
                 else:
-                    rname = '.'.join(components[0:i-1])
-                zone = '.'.join(components[i:])+'.'
-                print("NORMAL SUFFIX",partial,rname,zone,i)
+                    rname = '.'.join(components[0:i-2])
+                zone = '.'.join(components[i-1:])+'.'
+                #print("NORMAL SUFFIX p,rname,zone,i",partial,rname,zone,i)
                 return RnameZone(rname,zone)
         return RnameZone(None,None)
 
