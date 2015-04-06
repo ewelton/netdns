@@ -65,9 +65,15 @@ def splitFqdnInZone(fqdn,zone):
     """
     If the zone is known, why not simply remove the zone from the end?
     
+    Yes:
+        www.ichat.com
+        www.bichat.com
+    
     f=dotify(fqdn)
     z=dotify(zone)
-    if f.endswith(z):
+    if f==z:
+        return RnameZone('@',z)
+    if f.endswith('.'+z):
         return RnameZone(f[:-len(z)-1],z)
     return RnameZone(None,None)
     """
@@ -200,18 +206,24 @@ class EffectiveTLDs(object):
             
         for i in range(0,len(components)):
             partial = components[i:]
+            #print("CHECKING PARTIAL:",partial)
             if cls._isWildcardSuffix(partial[1:]):
                 zone = '.'.join(components[i-1:])+'.'
                 if i==1:
-                    rname='@'
+                    rname='@-1'
                 else:
                     rname = '.'.join(components[0:i-1])
                 return RnameZone(rname,zone)
             elif cls._isNormalSuffix(partial):
-                if i-2<=1:
+                if i-2<0:
                     rname='@'
+                    #print("SHORT",i,partial,components)
+                elif i-2==0:
+                    rname=".".join(components[:i-1])
+                    #print("RNAME from components=",i,rname,components)
                 else:
-                    rname = '.'.join(components[0:i-2])
+                    rname = '.'.join(components[0:i-1])
+                    #print("LONG",partial,rname,i)
                 zone = '.'.join(components[i-1:])+'.'
                 #print("NORMAL SUFFIX p,rname,zone,i",partial,rname,zone,i)
                 return RnameZone(rname,zone)

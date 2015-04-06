@@ -65,7 +65,7 @@ class TestCase(unittest.TestCase):
     def test_k01(self):
         assert EffectiveTLDs.isEffectiveTLD('other.test.nagoya.jp') == False
     def test_k03(self):
-        assert EffectiveTLDs.splitRnameZone('other.test.nagoya.jp').pair() == ('@','other.test.nagoya.jp.')
+        assert EffectiveTLDs.splitRnameZone('other.test.nagoya.jp').pair() == ('other','test.nagoya.jp.')
 
     def test_l01(self):
         assert EffectiveTLDs.isEffectiveTLD('first.other.test.nagoya.jp') == False
@@ -75,8 +75,11 @@ class TestCase(unittest.TestCase):
     def test_m01(self):
         assert EffectiveTLDs.isEffectiveTLD('blogspot.com') == True
     def test_m03(self):
-        print(EffectiveTLDs.splitRnameZone('something.blogspot.com').pair())
-        assert EffectiveTLDs.splitRnameZone('something.blogspot.com').pair() == ('something','blogspot.com.')
+        assert EffectiveTLDs.splitRnameZone('something.blogspot.com').pair() == ('@','something.blogspot.com.')
+
+    def test_n00(self):
+        print(EffectiveTLDs.splitRnameZone('ns1.p43.dynect.net'))
+        assert EffectiveTLDs.splitRnameZone('ns1.p43.dynect.net').pair() == ('@','something.blogspot.com.')
 
     def test_sfiz01(self):
         rz = splitFqdnInZone('www.test.com','test.com')

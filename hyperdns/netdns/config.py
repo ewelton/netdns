@@ -1,4 +1,4 @@
-import ipaddress,os,pkg_resources,re,json
+import ipaddress,os,pkg_resources,re,json,random
 
 class classproperty(object):
     def __init__(self, f):
@@ -153,14 +153,21 @@ class NetDNSConfiguration(object):
     @classmethod
     def _internalize_public_resolvers(cls):
         raw=cls.raw_public_resolvers
-        
+
         by_tag={}
         by_ip={}
-        for tag,defn in json.loads(raw):
+        for tag,defn in json.loads(raw).items():
             by_tag[tag]=defn['addrs']
             for addr in defn['addrs']:
                 by_ip[addr]=tag
-        return (by_tag,by_ip)
+        cls._public_resolvers_by_ip=by_ip
+        cls._public_resolvers_by_tag=by_tag
+        
+    @classmethod
+    def get_random_public_resolver(cls):
+        if cls._public_resolvers_by_ip==None:
+            cls._internalize_public_resolvers()
+        return ipaddress.ip_address(random.sample(list(cls._public_resolvers_by_ip.keys()),1)[0])
         
     @classproperty
     def public_resolvers_by_tag(cls):

@@ -13,12 +13,13 @@ from hyperdns.netdns import (
     )
 class ScanScheduleEntry(object):
     
-    def __init__(self,host,resolver,rtype):
+    def __init__(self,host,resolver,rtype,payload=None):
         assert isinstance(resolver,(IPv4Address,IPv6Address))
         self.rtype=RecordType.as_type(rtype)
         assert self.rtype!=None
         self.host=host
         self.resolver=resolver
+        self.payload=payload
         
 class Scanner(object):
     
@@ -41,6 +42,8 @@ class Scanner(object):
                     callback(entry,result,duration)
                 except Exception as E:
                     print("Exception:%s @ %s, error=%s:%s" % (entry.host,entry.resolver,E.__class__.__name__,E))
+                    import traceback
+                    traceback.print_exc()
                 self.schedule.task_done()
 
         for i in range(concurrency):
@@ -48,9 +51,9 @@ class Scanner(object):
             t.daemon = True # exit if only these are left
             t.start()
 
-    def schedule_lookup(self,host,resolver,rtype):
+    def schedule_lookup(self,host,resolver,rtype,payload=None):
         resolver=ip_address(resolver)
-        self.schedule.put(ScanScheduleEntry(host,resolver,rtype))
+        self.schedule.put(ScanScheduleEntry(host,resolver,rtype,payload=payload))
 
     def join(self):
         self.schedule.join()
