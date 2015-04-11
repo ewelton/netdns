@@ -8,17 +8,30 @@ class ResourceTree:
         self.root = root
 
     @property
-    def leaves(self):
+    def records(self):
         result = []
-        self._get_leaves_recursive(self.root,result)
+        self._get_records_recursive(self.root,result)
         return result
 
-    def _get_leaves_recursive(self,node,result):
+    def _get_records_recursive(self,node,result):
         if isinstance(node,RecordNode):
             result.append(node.value)
-        elif node.entries != None:
-            for entry in node.entries:
-                self._get_leaves_recursive(entry.node,result)
+        elif node.members != None:
+            for entry in node.members:
+                self._get_records_recursive(entry,result)
+
+    @property
+    def cnames(self):
+        result = []
+        self._get_cnames_recursive(self.root,result)
+        return result
+
+    def _get_cnames_recursive(self,node,result):
+        if node.cname != None:
+            result.append(node.cname)
+        if node.members != None:
+            for entry in node.members:
+                self._get_cnames_recursive(entry,result)
 
     def print(self,indent=''):
         if isinstance(self.root,RecordNode):
@@ -99,22 +112,16 @@ class ResourceTree:
             cname = None
         if kind == 'Geo':
             result = GeoNode(info,cname)
-            # for entry in entries:
-            #     result.entries.append(cls._get_entry(entry))
             for member in members:
                 result.members.append(cls._from_json_recursive(member))
             return result
         elif kind == 'Weighted':
             result = WeightedNode(info,cname)
-            # for entry in entries:
-            #     result.entries.append(cls._get_entry(entry))
             for member in members:
                 result.members.append(cls._from_json_recursive(member))
             return result
         elif kind == 'RecordSet':
             result = RecordSetNode(info,cname)
-            # for entry in entries:
-            #     result.entries.append(cls._get_entry(entry))
             for member in members:
                 result.members.append(cls._from_json_recursive(member))
             return result
