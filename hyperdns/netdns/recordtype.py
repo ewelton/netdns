@@ -261,7 +261,13 @@ class RecordType(IntEnum):
         """True if the type is a singleton, rdtype may be either integer
         or alphanumeric
         """
-        return cls.as_num(rdtype) in [cls.SOA,cls.CNAME, 39, 47, 50, 51, 30]
+        # CNAMEs are actually supposed to be singletons, at least in the context
+        # of the protocol. However when load balancing is configured for a resource,
+        # there can be multiple CNAME records for a given resource, each representing
+        # one possible choice. Only of of these is ever returned to resolvers at
+        # query time, but we need to represent multiple CNAMEs when interacting
+        # with vendors.
+        return cls.as_num(rdtype) in [cls.SOA, 39, 47, 50, 51, 30]
     
  
 
