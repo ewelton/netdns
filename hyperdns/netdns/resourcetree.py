@@ -33,6 +33,34 @@ class ResourceTree:
             for entry in node.members:
                 self._get_cnames_recursive(entry,result)
 
+    @property
+    def paths(self):
+        result = set()
+        self._get_paths_recursive(self.root,result)
+        return result
+
+    def _get_paths_recursive(self,node,result,ancestors=None):
+        if ancestors == None:
+            ancestors = []
+
+        if isinstance(node,RecordNode):
+            result.add(ResolutionPath(ancestors+[RecordComponent(node.value)]))
+        elif isinstance(node,GeoNode):
+            for child in node.members:
+                self._get_paths_recursive(child,result,ancestors+[GeoComponent(child.info)])
+        elif isinstance(node,WeightedNode):
+            weights = node.normalized_weights
+            for i in range(0,len(node.members)):
+                child = node.members[i]
+                comp = WeightedComponent(i+1,weights[i])
+                self._get_paths_recursive(child,result,ancestors+[comp])
+            pass
+        elif isinstance(node,RecordSetNode):
+            for child in node.members:
+                self._get_paths_recursive(child,result,ancestors)
+        else:
+            raise Exception('Unknown node type: %s'%(type(node)))
+
     def print(self,indent=''):
         if isinstance(self.root,RecordNode):
             print(indent+'Record '+str(self.root))
@@ -199,6 +227,14 @@ class WeightedNode(ResourceNode):
         super(WeightedNode,self).__init__('Weighted',info,cname)
         self.members = []
 
+    @property
+    def normalized_weights(self):
+        total = sum([member.info for member in self.members])
+        if total == 0:
+            return [1/len(members) for member in self.members]
+        else:
+            return [member.info/total for member in self.members]
+
 class RecordSetNode(ResourceNode):
 
     def __init__(self,info,cname):
@@ -222,3 +258,57 @@ class RecordNode(ResourceNode):
         rdtype = RecordType.as_str(self.value.rdtype)
         rdata = self.value.rdata
         return '%d %s %s %s'%(ttl,rdclass,rdtype,rdata)
+
+class GeoComponent:
+
+    def __init__(self,region):
+        assert isinstance(region,str)
+        self.region = region
+
+    def __str__(self):
+        return 'Geo(\'%s\')'%(self.region)
+
+class WeightedComponent:
+
+    def __init__(self,index,percentage):
+        assert isinstance(index,int)
+        assert isinstance(percentage,int) or isinstance(percentage,float)
+        self.index = index
+        self.percentage = percentage
+
+    def __str__(self):
+        return 'Weighted(%d,%d%%)'%(self.index,int(100*self.percentage))
+
+class RecordComponent:
+
+    def __init__(self,record):
+        assert isinstance(record,RecordSpec)
+        self.record = record
+
+    def __str__(self):
+        return 'Record(%s,%s,%s,%s)'%(
+            RecordClass.as_str(self.record.rdclass),
+            RecordType.as_str(self.record.rdtype),
+            self.record.ttl,
+            repr(self.record.rdata))
+
+class ResolutionPath:
+
+    def __init__(self,components):
+        self.components = components
+
+    def __str__(self):
+        return '/'.join([str(c) for c in self.components])
+
+    def __hash__(self):
+        return hash(str(self))
+
+    def __eq__(self,other):
+        return isinstance(other,ResolutionPath) and str(self) == str(other)
+
+    def __lt__(self,other):
+        if not isinstance(other,ResolutionPath):
+            raise TypeError('unorderable types: %s() < %s()'%
+                            (self.__class__.__name__,other.__class__.__name__))
+        else:
+            return str(self) < str(other)
