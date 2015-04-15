@@ -174,6 +174,29 @@ class ResolutionTree:
         recurse(self.root)
         return result
 
+    def delta(self,other):
+        if not isinstance(other,ResolutionTree):
+            raise TypeError('Delta can only be computed against another ResolutionTree')
+        paths1 = self.paths
+        paths2 = other.paths
+        deletions = paths1 - paths2
+        additions = paths2 - paths1
+        return Delta(self,other,deletions,additions)
+
+class Delta:
+
+    def __init__(self,source,dest,deletions,additions):
+        self.source = source
+        self.dest = dest
+        self.deletions = deletions
+        self.additions = additions
+
+    def __str__(self):
+        return '\n'.join(
+            [s[-1:]+s[:-1] for s in sorted(
+                ['%s-'%(path) for path in sorted(self.deletions)]+
+                ['%s+'%(path) for path in sorted(self.additions)])])
+
 class ResourceNode:
 
     def __init__(self,kind,info,cname):
