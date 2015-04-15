@@ -10,102 +10,135 @@ class ResourceTree:
     @property
     def records(self):
         result = []
-        self._get_records_recursive(self.root,result)
-        return result
 
-    def _get_records_recursive(self,node,result):
-        if isinstance(node,RecordNode):
-            result.append(node.value)
-        elif node.members != None:
-            for entry in node.members:
-                self._get_records_recursive(entry,result)
+        def recurse(node):
+            if isinstance(node,RecordNode):
+                result.append(node.value)
+            elif node.members != None:
+                for entry in node.members:
+                    recurse(entry)
+
+        recurse(self.root)
+        return result
 
     @property
     def cnames(self):
         result = []
-        self._get_cnames_recursive(self.root,result)
-        return result
 
-    def _get_cnames_recursive(self,node,result):
-        if node.cname != None:
-            result.append(node.cname)
-        if node.members != None:
-            for entry in node.members:
-                self._get_cnames_recursive(entry,result)
+        def recurse(node):
+            if node.cname != None:
+                result.append(node.cname)
+            if node.members != None:
+                for entry in node.members:
+                    recurse(entry)
+
+        recurse(self.root)
+        return result
 
     @property
     def paths(self):
         result = set()
-        self._get_paths_recursive(self.root,result)
+
+        def recurse(node,ancestors):
+            if isinstance(node,RecordNode):
+                result.add(ResolutionPath(ancestors+[RecordComponent(node.value)]))
+            elif isinstance(node,GeoNode):
+                for child in node.members:
+                    recurse(child,ancestors+[GeoComponent(child.info)])
+            elif isinstance(node,WeightedNode):
+                weights = node.normalized_weights
+                for i in range(0,len(node.members)):
+                    child = node.members[i]
+                    comp = WeightedComponent(i+1,weights[i])
+                    recurse(child,ancestors+[comp])
+                pass
+            elif isinstance(node,RecordSetNode):
+                for child in node.members:
+                    recurse(child,ancestors)
+            else:
+                raise TypeError('Unknown node type: %s'%(type(node)))
+
+        recurse(self.root,[])
         return result
 
-    def _get_paths_recursive(self,node,result,ancestors=None):
-        if ancestors == None:
-            ancestors = []
-
-        if isinstance(node,RecordNode):
-            result.add(ResolutionPath(ancestors+[RecordComponent(node.value)]))
-        elif isinstance(node,GeoNode):
-            for child in node.members:
-                self._get_paths_recursive(child,result,ancestors+[GeoComponent(child.info)])
-        elif isinstance(node,WeightedNode):
-            weights = node.normalized_weights
-            for i in range(0,len(node.members)):
-                child = node.members[i]
-                comp = WeightedComponent(i+1,weights[i])
-                self._get_paths_recursive(child,result,ancestors+[comp])
-            pass
-        elif isinstance(node,RecordSetNode):
-            for child in node.members:
-                self._get_paths_recursive(child,result,ancestors)
-        else:
-            raise Exception('Unknown node type: %s'%(type(node)))
-
     def print(self,indent=''):
+
+        def recurse(members,indent=''):
+            max_info_len = 0
+            for node in members:
+                if node.info != None:
+                    info_str = str(node.info)+':'
+                else:
+                    info_str = ''
+                if max_info_len < len(info_str):
+                    max_info_len = len(info_str)
+
+            for node in members:
+                if node.info != None:
+                    info_str = str(node.info)+':'
+                else:
+                    info_str = ''
+
+                info_pad = ' '*(max_info_len-len(info_str))
+                line = indent+info_str+info_pad+' '+node.kind
+
+                if isinstance(node,RecordNode):
+                    value = str(node)
+                else:
+                    value = node.value
+                if value != None:
+                    line = line+' '+str(value)
+                if node.cname != None:
+                    line = line+' '+str(RecordNode(None,None,node.cname))
+                print(line)
+                if node.members != None:
+                    recurse(node.members,indent+'    ')
+
         if isinstance(self.root,RecordNode):
             print(indent+'Record '+str(self.root))
         else:
             print(indent+self.root.kind)
-            self._print_entries(self.root.members,indent=indent+'    ')
-
-    def _print_entries(self,members,indent=''):
-        max_info_len = 0
-        for node in members:
-            if node.info != None:
-                info_str = str(node.info)+':'
-            else:
-                info_str = ''
-            if max_info_len < len(info_str):
-                max_info_len = len(info_str)
-
-        for node in members:
-            if node.info != None:
-                info_str = str(node.info)+':'
-            else:
-                info_str = ''
-
-            info_pad = ' '*(max_info_len-len(info_str))
-            line = indent+info_str+info_pad+' '+node.kind
-
-            if isinstance(node,RecordNode):
-                value = str(node)
-            else:
-                value = node.value
-            if value != None:
-                line = line+' '+str(value)
-            if node.cname != None:
-                line = line+' '+str(RecordNode(None,None,node.cname))
-            print(line)
-            if node.members != None:
-                self._print_entries(node.members,indent+'    ')
+            recurse(self.root.members,indent=indent+'    ')
 
     def json(self):
         return self.root.json()
 
     @classmethod
     def from_json(cls,data):
-        root = cls._from_json_recursive(data)
-        return ResourceTree(root)
+
+        def recurse(data):
+            kind = data.get('kind')
+            members = data.get('members')
+            info = data.get('info')
+            cname_rdata = data.get('cname')
+            cname_ttl = data.get('cname_ttl')
+            if cname_rdata != None and cname_ttl != None:
+                cname = RecordSpec(rdtype=RecordType.CNAME,rdata=cname_rdata,ttl=cname_ttl)
+            else:
+                cname = None
+            if kind == 'Geo':
+                result = GeoNode(info,cname)
+                for member in members:
+                    result.members.append(recurse(member))
+                return result
+            elif kind == 'Weighted':
+                result = WeightedNode(info,cname)
+                for member in members:
+                    result.members.append(recurse(member))
+                return result
+            elif kind == 'RecordSet':
+                result = RecordSetNode(info,cname)
+                for member in members:
+                    result.members.append(recurse(member))
+                return result
+            elif kind == 'Record':
+                spec = RecordSpec(json=data['value'])
+                result = RecordNode(info,cname,spec)
+                return result
+            else:
+                raise Exception('Unknown kind: %s'%(kind))
+
+        return ResourceTree(recurse(data))
 
     @classmethod
     def _get_cname(cls,entry):
@@ -127,51 +160,19 @@ class ResourceTree:
         node = cls._from_json_recursive(entry_node)
         return ResourceEntry(entry_info,cname,node)
 
-    @classmethod
-    def _from_json_recursive(cls,data):
-        kind = data.get('kind')
-        members = data.get('members')
-        info = data.get('info')
-        cname_rdata = data.get('cname')
-        cname_ttl = data.get('cname_ttl')
-        if cname_rdata != None and cname_ttl != None:
-            cname = RecordSpec(rdtype=RecordType.CNAME,rdata=cname_rdata,ttl=cname_ttl)
-        else:
-            cname = None
-        if kind == 'Geo':
-            result = GeoNode(info,cname)
-            for member in members:
-                result.members.append(cls._from_json_recursive(member))
-            return result
-        elif kind == 'Weighted':
-            result = WeightedNode(info,cname)
-            for member in members:
-                result.members.append(cls._from_json_recursive(member))
-            return result
-        elif kind == 'RecordSet':
-            result = RecordSetNode(info,cname)
-            for member in members:
-                result.members.append(cls._from_json_recursive(member))
-            return result
-        elif kind == 'Record':
-            spec = RecordSpec(json=data['value'])
-            result = RecordNode(info,cname,spec)
-            return result
-        else:
-            raise Exception('Unknown kind: %s'%(kind))
-
     @property
     def referenced_cnames(self):
-        referenced = set()
-        self._find_referenced_cnames(self.root,referenced)
-        return referenced
+        result = set()
 
-    def _find_referenced_cnames(self,node,referenced):
-        if node.cname != None:
-            referenced.add(node.cname.rdata)
-        if node.members != None:
-            for member in node.members:
-                self._find_referenced_cnames(member,referenced)
+        def recurse(node):
+            if node.cname != None:
+                result.add(node.cname.rdata)
+            if node.members != None:
+                for member in node.members:
+                    recurse(member)
+
+        recurse(self.root)
+        return result
 
 class ResourceNode:
 
