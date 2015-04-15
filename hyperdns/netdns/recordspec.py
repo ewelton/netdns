@@ -695,6 +695,15 @@ class RecordSpec(object):
     def __ne__(self,other):
         """Simple not __eq__()"""
         return not self.__eq__(other)
+
+    def __lt__(self,other):
+        if not isinstance(other,RecordSpec):
+            raise TypeError('unorderable types: RecordSpec() < RecordSpec()')
+        r1 = self
+        r2 = other
+        fields1="{%s}{%s}{%s}{%s}" % (r1.rdclass.name,r1.rdtype.name,r1.rdata,r1._ttl)
+        fields2="{%s}{%s}{%s}{%s}" % (r2.rdclass.name,r2.rdtype.name,r2.rdata,r2._ttl)
+        return fields1 < fields2
  
     def match(self,other,matchTTL=True,matchPresence=True):
         """determine if two records, A and B match where A and B are
