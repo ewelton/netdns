@@ -2,7 +2,7 @@ from .recordtype import RecordType
 from .recordspec import RecordSpec
 from .recordclass import RecordClass
 
-class ResourceTree:
+class ResolutionTree:
 
     def __init__(self,root):
         self.root = root
@@ -138,7 +138,7 @@ class ResourceTree:
             else:
                 raise Exception('Unknown kind: %s'%(kind))
 
-        return ResourceTree(recurse(data))
+        return ResolutionTree(recurse(data))
 
     @classmethod
     def _get_cname(cls,entry):

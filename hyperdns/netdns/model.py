@@ -15,7 +15,7 @@ from hyperdns.netdns import (
     MalformedJsonZoneData,
     CorruptBindFile
     )
-from .resourcetree import ResourceTree
+from .resolutiontree import ResolutionTree
 
 class ResourceData(object):
     
@@ -279,7 +279,7 @@ class ZoneData(object):
 
             rtree = resource.get('rtree')
             if rtree != None:
-                rd.rtree = ResourceTree.from_json(rtree)
+                rd.rtree = ResolutionTree.from_json(rtree)
 
         return zd
         
