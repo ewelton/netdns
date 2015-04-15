@@ -332,11 +332,10 @@ class Delta:
                 i = 0
                 while i < len(ref1.node.members) and i < len(ref2.node.members):
                     if weights1[i] != weights2[i]:
-                        for i in range(0,len(weights1)):
-                            changed('Change weight of group %d: %d%% -> %d%%'%(
-                                i+1,
-                                int(weights1[i]*100),
-                                int(weights2[i]*100)))
+                        changed('Change weight of group %d: %d%% -> %d%%'%(
+                            i+1,
+                            int(weights1[i]*100),
+                            int(weights2[i]*100)))
                     recurse(NodeRef(ref1.node,i,ref1.node.members[i]),
                             NodeRef(ref2.node,i,ref2.node.members[i]),
                             suffix,indent+1)
