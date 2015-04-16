@@ -155,7 +155,7 @@ class ResolutionTree:
         from .delta import Delta
         return Delta(self,other)
 
-class ResourceNode:
+class ResolutionNode:
 
     def __init__(self,kind,info,cname):
         self.kind = kind
@@ -199,18 +199,18 @@ class ResourceEntry:
     def __init__(self,info,cname,node):
         assert ((cname == None) or
                 (isinstance(cname,RecordSpec) and cname.rdtype == RecordType.CNAME))
-        assert node == None or isinstance(node,ResourceNode)
+        assert node == None or isinstance(node,ResolutionNode)
         self.info = info
         self.cname = cname
         self.node = node
 
-class GeoNode(ResourceNode):
+class GeoNode(ResolutionNode):
 
     def __init__(self,info,cname):
         super(GeoNode,self).__init__('Geo',info,cname)
         self.members = []
 
-class WeightedNode(ResourceNode):
+class WeightedNode(ResolutionNode):
 
     def __init__(self,info,cname):
         super(WeightedNode,self).__init__('Weighted',info,cname)
@@ -228,7 +228,7 @@ class WeightedNode(ResourceNode):
         else:
             return [member.info/total for member in self.members]
 
-class LeafNode(ResourceNode):
+class LeafNode(ResolutionNode):
 
     def __init__(self,kind,info,cname):
         super(LeafNode,self).__init__(kind,info,cname)
