@@ -36,6 +36,24 @@ class ResolutionTree:
         recurse(self.root)
         return result
 
+    def normalize_weights(self):
+
+        def recurse(node):
+            if isinstance(node,WeightedNode):
+                total = sum([member.info for member in node.members])
+                if total == 0:
+                    for member in node.members:
+                        member.info = 1/len(node.members)
+                else:
+                    for member in node.members:
+                        member.info = member.info/total
+            if node.members != None:
+                for entry in node.members:
+                    recurse(entry)
+
+        if self.root != None:
+            recurse(self.root)
+
     def print(self,indent=''):
 
         def recurse(members,indent=''):
