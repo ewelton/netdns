@@ -36,33 +36,6 @@ class ResolutionTree:
         recurse(self.root)
         return result
 
-    @property
-    def paths(self):
-        result = set()
-
-        def recurse(node,ancestors):
-            if isinstance(node,RecordNode):
-                result.add(ResolutionPath(ancestors+[RecordComponent(node.value)]))
-            elif isinstance(node,GeoNode):
-                for child in node.members:
-                    recurse(child,ancestors+[GeoComponent(child.info)])
-            elif isinstance(node,WeightedNode):
-                weights = node.normalized_weights
-                for i in range(0,len(node.members)):
-                    child = node.members[i]
-                    comp = WeightedComponent(i+1,weights[i])
-                    recurse(child,ancestors+[comp])
-                pass
-            elif isinstance(node,RecordSetNode):
-                for child in node.members:
-                    recurse(child,ancestors)
-            else:
-                raise TypeError('Unknown node type: %s'%(type(node)))
-
-        if self.root != None:
-            recurse(self.root,[])
-        return result
-
     def print(self,indent=''):
 
         def recurse(members,indent=''):
@@ -283,57 +256,3 @@ class RecordNode(LeafNode):
         rdtype = RecordType.as_str(self.value.rdtype)
         rdata = self.value.rdata
         return '%d %s %s %s'%(ttl,rdclass,rdtype,rdata)
-
-class GeoComponent:
-
-    def __init__(self,region):
-        assert isinstance(region,str)
-        self.region = region
-
-    def __str__(self):
-        return 'Geo(\'%s\')'%(self.region)
-
-class WeightedComponent:
-
-    def __init__(self,index,percentage):
-        assert isinstance(index,int)
-        assert isinstance(percentage,int) or isinstance(percentage,float)
-        self.index = index
-        self.percentage = percentage
-
-    def __str__(self):
-        return 'Weighted(%d,%d%%)'%(self.index,int(100*self.percentage))
-
-class RecordComponent:
-
-    def __init__(self,record):
-        assert isinstance(record,RecordSpec)
-        self.record = record
-
-    def __str__(self):
-        return 'Record(%s,%s,%s,%s)'%(
-            RecordClass.as_str(self.record.rdclass),
-            RecordType.as_str(self.record.rdtype),
-            self.record.ttl,
-            repr(self.record.rdata))
-
-class ResolutionPath:
-
-    def __init__(self,components):
-        self.components = components
-
-    def __str__(self):
-        return '/'.join([str(c) for c in self.components])
-
-    def __hash__(self):
-        return hash(str(self))
-
-    def __eq__(self,other):
-        return isinstance(other,ResolutionPath) and str(self) == str(other)
-
-    def __lt__(self,other):
-        if not isinstance(other,ResolutionPath):
-            raise TypeError('unorderable types: %s() < %s()'%
-                            (self.__class__.__name__,other.__class__.__name__))
-        else:
-            return str(self) < str(other)
