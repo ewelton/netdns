@@ -1,0 +1,8 @@
+{
+    "fqdn": "hypertest1.com.",
+    "resources": [
+        {
+            "name": "www"
+        }
+    ]
+}

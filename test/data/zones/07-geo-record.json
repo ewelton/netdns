@@ -1,0 +1,151 @@
+{
+    "fqdn": "hypertest1.com.",
+    "resources": [
+        {
+            "name": "@",
+            "records": [
+                {
+                    "class": "IN",
+                    "presence": "present",
+                    "rdata": "ns1.somedomain.com.",
+                    "source": null,
+                    "ttl": 86400,
+                    "type": "NS"
+                },
+                {
+                    "class": "IN",
+                    "presence": "present",
+                    "rdata": "ns2.somedomain.com.",
+                    "source": null,
+                    "ttl": 86400,
+                    "type": "NS"
+                },
+                {
+                    "class": "IN",
+                    "presence": "present",
+                    "rdata": "ns1.somedomain.com. admin.somedomain.com. 32 3600 600 604800 1800",
+                    "source": null,
+                    "ttl": 3600,
+                    "type": "SOA"
+                }
+            ]
+        },
+        {
+            "name": "single",
+            "records": [
+                {
+                    "class": "IN",
+                    "presence": "present",
+                    "rdata": "1.2.3.4",
+                    "source": null,
+                    "ttl": 300,
+                    "type": "A"
+                }
+            ]
+        },
+        {
+            "name": "www",
+            "rtree": {
+                "kind": "Geo",
+                "members": [
+                    {
+                        "info": "Asia",
+                        "kind": "Record",
+                        "value": {
+                            "class": "IN",
+                            "presence": "present",
+                            "rdata": "1.1.1.1",
+                            "source": null,
+                            "ttl": 310,
+                            "type": "A"
+                        }
+                    },
+                    {
+                        "info": "EU Central",
+                        "kind": "Record",
+                        "value": {
+                            "class": "IN",
+                            "presence": "present",
+                            "rdata": "2.2.2.2",
+                            "source": null,
+                            "ttl": 320,
+                            "type": "A"
+                        }
+                    },
+                    {
+                        "info": "EU East",
+                        "kind": "Record",
+                        "value": {
+                            "class": "IN",
+                            "presence": "present",
+                            "rdata": "3.3.3.3",
+                            "source": null,
+                            "ttl": 330,
+                            "type": "A"
+                        }
+                    },
+                    {
+                        "info": "EU West",
+                        "kind": "Record",
+                        "value": {
+                            "class": "IN",
+                            "presence": "present",
+                            "rdata": "4.4.4.4",
+                            "source": null,
+                            "ttl": 340,
+                            "type": "A"
+                        }
+                    },
+                    {
+                        "info": "US Central",
+                        "kind": "Record",
+                        "value": {
+                            "class": "IN",
+                            "presence": "present",
+                            "rdata": "5.5.5.5",
+                            "source": null,
+                            "ttl": 350,
+                            "type": "A"
+                        }
+                    },
+                    {
+                        "info": "US East",
+                        "kind": "Record",
+                        "value": {
+                            "class": "IN",
+                            "presence": "present",
+                            "rdata": "6.6.6.6",
+                            "source": null,
+                            "ttl": 360,
+                            "type": "A"
+                        }
+                    },
+                    {
+                        "info": "US West",
+                        "kind": "Record",
+                        "value": {
+                            "class": "IN",
+                            "presence": "present",
+                            "rdata": "7.7.7.7",
+                            "source": null,
+                            "ttl": 370,
+                            "type": "A"
+                        }
+                    },
+                    {
+                        "info": "global",
+                        "kind": "Record",
+                        "value": {
+                            "class": "IN",
+                            "presence": "present",
+                            "rdata": "8.8.8.8",
+                            "source": null,
+                            "ttl": 380,
+                            "type": "A"
+                        }
+                    }
+                ]
+            }
+        }
+    ]
+}
