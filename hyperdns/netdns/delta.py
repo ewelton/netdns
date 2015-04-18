@@ -1,6 +1,6 @@
 from hyperdns.netdns.resolutiontree import *
 
-def newtree_delta(tree1,tree2):
+def rtree_delta(tree1,tree2):
 
     messages = []
 
