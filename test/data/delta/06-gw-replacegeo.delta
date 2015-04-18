@@ -1,0 +1,24 @@
+Region "EU": Group 2: Del record 30 IN A 1.1.1.1
+Region "EU": Group 2: Del record 30 IN A 1.1.1.2
+Region "EU": Group 2: Del record 30 IN A 2.2.2.1
+Region "EU": Group 2: Del record 30 IN A 2.2.2.2
+Region "EU": Del group 2, weight 66.7%
+Region "EU": Group 1: Del record 30 IN A 1.1.1.1
+Region "EU": Group 1: Del record 30 IN A 1.1.1.2
+Region "EU": Group 1: Del record 30 IN A 2.2.2.1
+Region "EU": Group 1: Del record 30 IN A 2.2.2.2
+Region "EU": Del group 1, weight 33.3%
+Region "EU": Del Weighted node
+Del region EU
+Add region Asia
+Region "Asia": Add Weighted node
+Region "Asia": Add group 1, weight 33.3%
+Region "Asia": Group 1: Add record 30 IN A 10.0.0.1
+Region "Asia": Group 1: Add record 30 IN A 10.0.0.2
+Region "Asia": Group 1: Add record 30 IN A 2.2.2.1
+Region "Asia": Group 1: Add record 30 IN A 2.2.2.2
+Region "Asia": Add group 2, weight 66.7%
+Region "Asia": Group 2: Add record 30 IN A 10.0.0.1
+Region "Asia": Group 2: Add record 30 IN A 10.0.0.2
+Region "Asia": Group 2: Add record 30 IN A 2.2.2.1
+Region "Asia": Group 2: Add record 30 IN A 2.2.2.2

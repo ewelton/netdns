@@ -1,0 +1,6 @@
+Region "US": Group 1: Change weight 100% -> 40%
+Region "US": Add group 2, weight 60.0%
+Region "US": Group 2: Add record 30 IN A 3.3.3.1
+Region "US": Group 2: Add record 30 IN A 3.3.3.2
+Region "US": Group 2: Add record 30 IN A 4.4.4.1
+Region "US": Group 2: Add record 30 IN A 4.4.4.2

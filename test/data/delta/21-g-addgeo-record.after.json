@@ -1,0 +1,81 @@
+{
+    "fqdn": "hypertest1.com.",
+    "resources": [
+        {
+            "name": "www",
+            "rtree": {
+                "kind": "Geo",
+                "members": [
+                    {
+                        "info": "Asia",
+                        "kind": "RecordSet",
+                        "members": [
+                            {
+                                "kind": "Record",
+                                "value": {
+                                    "class": "IN",
+                                    "presence": "present",
+                                    "rdata": "1.1.1.1",
+                                    "source": null,
+                                    "ttl": 30,
+                                    "type": "A"
+                                }
+                            },
+                            {
+                                "kind": "Record",
+                                "value": {
+                                    "class": "IN",
+                                    "presence": "present",
+                                    "rdata": "1.1.1.2",
+                                    "source": null,
+                                    "ttl": 30,
+                                    "type": "A"
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "info": "EU",
+                        "kind": "Record",
+                        "value": {
+                            "class": "IN",
+                            "presence": "present",
+                            "rdata": "3.3.3.1",
+                            "source": null,
+                            "ttl": 30,
+                            "type": "A"
+                        }
+                    },
+                    {
+                        "info": "US",
+                        "kind": "RecordSet",
+                        "members": [
+                            {
+                                "kind": "Record",
+                                "value": {
+                                    "class": "IN",
+                                    "presence": "present",
+                                    "rdata": "5.5.5.1",
+                                    "source": null,
+                                    "ttl": 30,
+                                    "type": "A"
+                                }
+                            },
+                            {
+                                "kind": "Record",
+                                "value": {
+                                    "class": "IN",
+                                    "presence": "present",
+                                    "rdata": "5.5.5.2",
+                                    "source": null,
+                                    "ttl": 30,
+                                    "type": "A"
+                                }
+                            }
+                        ]
+                    }
+                ]
+            }
+        }
+    ]
+}

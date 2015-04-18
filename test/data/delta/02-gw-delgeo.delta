@@ -1,0 +1,12 @@
+Region "EU": Group 2: Del record 30 IN A 3.3.3.1
+Region "EU": Group 2: Del record 30 IN A 3.3.3.2
+Region "EU": Group 2: Del record 30 IN A 4.4.4.1
+Region "EU": Group 2: Del record 30 IN A 4.4.4.2
+Region "EU": Del group 2, weight 60.0%
+Region "EU": Group 1: Del record 30 IN A 3.3.3.1
+Region "EU": Group 1: Del record 30 IN A 3.3.3.2
+Region "EU": Group 1: Del record 30 IN A 4.4.4.1
+Region "EU": Group 1: Del record 30 IN A 4.4.4.2
+Region "EU": Del group 1, weight 40.0%
+Region "EU": Del Weighted node
+Del region EU

@@ -7,7 +7,9 @@
                 "kind": "Geo",
                 "members": [
                     {
-                        "info": "Asia",
+                        "cname": "eu.hypertest1.com.",
+                        "cname_ttl": 900,
+                        "info": "EU",
                         "kind": "Weighted",
                         "members": [
                             {
@@ -69,7 +71,7 @@
                         ]
                     },
                     {
-                        "info": "EU",
+                        "info": "US",
                         "kind": "Weighted",
                         "members": [
                             {
@@ -121,68 +123,6 @@
                                             "class": "IN",
                                             "presence": "present",
                                             "rdata": "4.4.4.2",
-                                            "source": null,
-                                            "ttl": 30,
-                                            "type": "A"
-                                        }
-                                    }
-                                ]
-                            }
-                        ]
-                    },
-                    {
-                        "info": "US",
-                        "kind": "Weighted",
-                        "members": [
-                            {
-                                "info": 1,
-                                "kind": "RecordSet",
-                                "members": [
-                                    {
-                                        "kind": "Record",
-                                        "value": {
-                                            "class": "IN",
-                                            "presence": "present",
-                                            "rdata": "5.5.5.1",
-                                            "source": null,
-                                            "ttl": 30,
-                                            "type": "A"
-                                        }
-                                    },
-                                    {
-                                        "kind": "Record",
-                                        "value": {
-                                            "class": "IN",
-                                            "presence": "present",
-                                            "rdata": "5.5.5.2",
-                                            "source": null,
-                                            "ttl": 30,
-                                            "type": "A"
-                                        }
-                                    }
-                                ]
-                            },
-                            {
-                                "info": 3,
-                                "kind": "RecordSet",
-                                "members": [
-                                    {
-                                        "kind": "Record",
-                                        "value": {
-                                            "class": "IN",
-                                            "presence": "present",
-                                            "rdata": "6.6.6.1",
-                                            "source": null,
-                                            "ttl": 30,
-                                            "type": "A"
-                                        }
-                                    },
-                                    {
-                                        "kind": "Record",
-                                        "value": {
-                                            "class": "IN",
-                                            "presence": "present",
-                                            "rdata": "6.6.6.2",
                                             "source": null,
                                             "ttl": 30,
                                             "type": "A"

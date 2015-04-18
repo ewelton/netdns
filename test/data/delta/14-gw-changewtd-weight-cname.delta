@@ -1,0 +1,3 @@
+Region "EU": Group 1: Change weight 33% -> 50%
+Region "EU": Group 2: Change weight 66% -> 50%
+Region "EU": Group 2: Change CNAME www-eu-2.hypertest1.com. 900 -> eu-2.hypertest1.com. 900

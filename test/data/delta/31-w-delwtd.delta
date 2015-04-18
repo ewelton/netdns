@@ -1,0 +1,6 @@
+Group 1: Change weight 40% -> 100%
+Group 2: Del record 30 IN A 3.3.3.1
+Group 2: Del record 30 IN A 3.3.3.2
+Group 2: Del record 30 IN A 4.4.4.1
+Group 2: Del record 30 IN A 4.4.4.2
+Del group 2, weight 60.0%
