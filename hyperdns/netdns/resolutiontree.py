@@ -1,103 +1,342 @@
 from .recordtype import RecordType
 from .recordspec import RecordSpec
 from .recordclass import RecordClass
-from pprint import pformat
+import sys
+
+class TreeNode:
+
+    @property
+    def all_records(self):
+        result = set()
+        self.find_all_records(result)
+        return frozenset(result)
+
+class RegionCodes:
+
+    def __init__(self,codes):
+        self._codes = frozenset(codes)
+
+    @property
+    def codes(self):
+        return self._codes
+
+    @property
+    def key(self):
+        return ','.join(sorted(self.codes))
+
+    def __hash__(self):
+        return self.codes.__hash__()
+
+    def __eq__(self,other):
+        return (isinstance(other,RegionCodes) and
+                self.codes == other.codes)
+
+    def __lt__(self,other):
+        if not isinstance(other,RegionCodes):
+            return -1
+        return self.key < other.key
+
+    def __str__(self):
+        return ','.join(sorted(self.codes))
+
+class GeoEntry:
+
+    def __init__(self,cname,child):
+        assert cname == None or isinstance(cname,RecordSpec)
+        assert isinstance(child,TreeNode)
+        self._cname = cname
+        self._child = child
+
+    @property
+    def cname(self):
+        return self._cname
+
+    @property
+    def child(self):
+        return self._child
+
+    @property
+    def key(self):
+        return '%s %s'%(self.cname,self.child.key)
+
+    def __hash__(self):
+        return self.key.__hash__()
+
+    def __eq__(self,other):
+        return (isinstance(other,GeoEntry) and
+                other.cname == self.cname and
+                other.child == self.child)
+
+class GeoNode(TreeNode):
+
+    # entries: Map of RegionCodes -> TreeNode
+    def __init__(self,entries):
+        assert all([isinstance(key,RegionCodes) for key in entries.keys()])
+        assert all([isinstance(value,GeoEntry) for value in entries.values()])
+        self._entries = entries
+
+    @property
+    def entries(self):
+        return self._entries
+
+    @property
+    def key(self):
+        return ' '.join([e[k].key for k in self.entries.keys()])
+
+    def __hash__(self):
+        return self.key.__hash__()
+
+    def __eq__(self,other):
+        return (isinstance(other,GeoNode) and
+                other.entries == self.entries)
+
+    def find_referenced_cnames(self,result):
+        for e in self.entries.values():
+            if e.cname != None:
+                result.add(e.cname.rdata)
+            e.child.find_referenced_cnames(result)
+
+    def find_all_records(self,result):
+        for e in self.entries.values():
+            e.child.find_all_records(result)
+
+    def to_json(self):
+        result = { 'kind': 'Geo',
+                   'members': [] }
+        for key in sorted(self.entries.keys()):
+            entry = self.entries[key]
+            member = entry.child.to_json()
+            member['info'] = str(key)
+            if entry.cname != None:
+                member['cname'] = entry.cname.rdata
+                member['cname_ttl'] = entry.cname.ttl
+            result['members'].append(member)
+        return result
+
+    def print(self,indent='',prefix='',suffix='',file=sys.stdout):
+        print('%s%sGeo%s'%(indent,prefix,suffix),file=file)
+        for key in sorted(self.entries.keys()):
+            entry = self.entries[key]
+            if entry.cname == None:
+                csuffix = ''
+            else:
+                csuffix = '; '+str(RecordNode(entry.cname))
+            entry.child.print(indent=indent+'    ',
+                              prefix='Region "%s": '%(key),
+                              suffix=csuffix,
+                              file=file)
+
+class WeightedEntry:
+
+    def __init__(self,weight,cname,child,index=None):
+        assert isinstance(index,int) or index == None
+        assert isinstance(weight,int) or isinstance(weight,float)
+        assert isinstance(child,TreeNode)
+        self._index = index
+        self._weight = weight
+        self._cname = cname
+        self._child = child
+
+    @property
+    def index(self):
+        return self._index
+
+    @property
+    def weight(self):
+        return self._weight
+
+    @property
+    def child(self):
+        return self._child
+
+    @property
+    def cname(self):
+        return self._cname
+
+    @property
+    def key(self):
+        return '%s %s %s %s'%(self.index,self.weight,self.cname,self.child.key)
+
+    def __hash__(self):
+        return self.key.__hash__()
+
+    def __eq__(self,other):
+        return (isinstance(other,WeightedEntry) and
+                other.index == self.index and
+                other.weight == self.weight and
+                other.child == self.child)
+
+class WeightedNode(TreeNode):
+
+    def __init__(self,entries):
+        assert all([isinstance(e,WeightedEntry) for e in entries])
+
+        total_weight = sum([e.weight for e in entries])
+        if total_weight == 0:
+            normalized = [1/len(entries) for e in entries]
+        else:
+            normalized = [e.weight/total_weight for e in entries]
+
+        self._entries = [WeightedEntry(weight=normalized[i],
+                                         cname=entries[i].cname,
+                                         child=entries[i].child,
+                                         index=i)
+                                  for i in range(0,len(entries))]
+
+    @property
+    def entries(self):
+        return self._entries
+
+    @property
+    def key(self):
+        return ' '.join([e.key for e in self.entries])
+
+    def __hash__(self):
+        return self.key.__hash__()
+
+    def __eq__(self,other):
+        return (isinstance(other,WeightedNode) and
+                other.entries == self.entries)
+
+    def print(self,indent='',prefix='',suffix='',file=sys.stdout):
+        print('%s%sWeighted%s'%(indent,prefix,suffix),file=file)
+        for entry in self.entries:
+            csuffix = ' (weight %2.1f%%)'%(100*entry.weight)
+            if entry.cname != None:
+                csuffix += '; '+str(RecordNode(entry.cname))
+            entry.child.print(indent=indent+'    ',
+                              prefix='Group %d: '%(entry.index+1),
+                              suffix=csuffix,
+                              file=file)
+
+    def to_json(self):
+        result = { 'kind': 'Weighted',
+                   'members': [] }
+        for entry in self.entries:
+            member = entry.child.to_json()
+            member['info'] = int(100*entry.weight)
+            if entry.cname != None:
+                member['cname'] = entry.cname.rdata
+                member['cname_ttl'] = entry.cname.ttl
+            result['members'].append(member)
+        return result
+
+    def find_referenced_cnames(self,result):
+        for e in self.entries:
+            if e.cname != None:
+                result.add(e.cname.rdata)
+            e.child.find_referenced_cnames(result)
+
+    def find_all_records(self,result):
+        for e in self.entries:
+            e.child.find_all_records(result)
+
+class LeafNode(TreeNode):
+    pass
+
+class RecordSetNode(LeafNode):
+
+    def __init__(self,entries):
+        assert all([isinstance(e,RecordNode) for e in entries])
+        self._entries = entries
+
+    @property
+    def entries(self):
+        return self._entries
+
+    @property
+    def key(self):
+        return ' '.join([e.key for e in self.entries])
+
+    def __hash__(self):
+        return self.key.__hash__()
+
+    def __eq__(self,other):
+        return (isinstance(other,RecordSetNode) and
+                other.entries == self.entries)
+
+    def print(self,indent='',prefix='',suffix='',file=sys.stdout):
+        print('%s%sRecordSet%s'%(indent,prefix,suffix),file=file)
+        for e in self.entries:
+            e.print(indent+'    ',file=file)
+
+    def to_json(self):
+        return { 'kind': 'RecordSet',
+                 'members': [e.to_json() for e in self.entries] }
+
+    def find_referenced_cnames(self,result):
+        pass
+
+    def find_all_records(self,result):
+        for e in self.entries:
+            e.find_all_records(result)
+
+class RecordNode(LeafNode):
+
+    def __init__(self,record):
+        assert isinstance(record,RecordSpec)
+        self._record = record
+
+    @property
+    def record(self):
+        return self._record
+
+    @property
+    def key(self):
+        return self.record.key
+
+    def __hash__(self):
+        return self.key.__hash__()
+
+    def __eq__(self,other):
+        return (isinstance(other,RecordNode) and
+                other.record == self.record)
+
+    def __lt__(self,other):
+        if not isinstance(other,RecordNode):
+            raise TypeError('TypeError: unorderable types: RecordNode() < %s()'%(
+                            other.__class__.__name__))
+        return self.record < other.record
+
+    def __str__(self):
+        ttl = self.record.ttl
+        rdclass = RecordClass.as_str(self.record.rdclass)
+        rdtype = RecordType.as_str(self.record.rdtype)
+        rdata = self.record.rdata
+        return '%d %s %s %s'%(ttl,rdclass,rdtype,rdata)
+
+    def print(self,indent='',prefix='',suffix='',file=sys.stdout):
+        print('%s%sRecord %s%s'%(indent,prefix,self,suffix),file=file)
+
+    def to_json(self):
+        return { 'kind': 'Record',
+                 'value': self.record.__dict__ }
+
+    def find_referenced_cnames(self,result):
+        pass
+
+    def find_all_records(self,result):
+        result.add(self.record)
 
 class ResolutionTree:
 
     def __init__(self,root):
-        self.root = root
+        assert root == None or isinstance(root,TreeNode)
+        self._root = root
 
     @property
-    def records(self):
-        result = []
+    def root(self):
+        return self._root
 
-        def recurse(node):
-            if isinstance(node,RecordNode):
-                result.append(node.value)
-            elif node.members != None:
-                for entry in node.members:
-                    recurse(entry)
+    @staticmethod
+    def from_json(root_data):
 
-        recurse(self.root)
-        return result
+        class ParsedMember:
 
-    @property
-    def cnames(self):
-        result = []
-
-        def recurse(node):
-            if node.cname != None:
-                result.append(node.cname)
-            if node.members != None:
-                for entry in node.members:
-                    recurse(entry)
-
-        recurse(self.root)
-        return result
-
-    def normalize_weights(self):
-
-        def recurse(node):
-            if isinstance(node,WeightedNode):
-                total = sum([member.info for member in node.members])
-                if total == 0:
-                    for member in node.members:
-                        member.info = 1/len(node.members)
-                else:
-                    for member in node.members:
-                        member.info = member.info/total
-            if node.members != None:
-                for entry in node.members:
-                    recurse(entry)
-
-        if self.root != None:
-            recurse(self.root)
-
-    def print(self,indent=''):
-
-        def recurse(members,indent=''):
-            max_info_len = 0
-            for node in members:
-                if node.info != None:
-                    info_str = str(node.info)+':'
-                else:
-                    info_str = ''
-                if max_info_len < len(info_str):
-                    max_info_len = len(info_str)
-
-            for node in members:
-                if node.info != None:
-                    info_str = str(node.info)+':'
-                else:
-                    info_str = ''
-
-                info_pad = ' '*(max_info_len-len(info_str))
-                line = indent+info_str+info_pad+' '+node.kind
-
-                if isinstance(node,RecordNode):
-                    value = str(node)
-                else:
-                    value = node.value
-                if value != None:
-                    line = line+' '+str(value)
-                if node.cname != None:
-                    line = line+' '+str(RecordNode(None,None,node.cname))
-                print(line)
-                if node.members != None:
-                    recurse(node.members,indent+'    ')
-
-        if isinstance(self.root,RecordNode):
-            print(indent+'Record '+str(self.root))
-        else:
-            print(indent+self.root.kind)
-            recurse(self.root.members,indent=indent+'    ')
-
-    def json(self):
-        return self.root.json()
-
-    @classmethod
-    def from_json(cls,data):
+            def __init__(self,info,cname,node):
+                self.info = info
+                self.cname = cname
+                self.node = node
 
         def recurse(data):
             kind = data.get('kind')
@@ -110,167 +349,42 @@ class ResolutionTree:
             else:
                 cname = None
             if kind == 'Geo':
-                result = GeoNode(info,cname)
-                for member in members:
-                    result.members.append(recurse(member))
-                return result
+                node = GeoNode({ RegionCodes(pm.info.split(',')): GeoEntry(pm.cname,pm.node)
+                                 for pm in [recurse(m) for m in members] })
             elif kind == 'Weighted':
-                result = WeightedNode(info,cname)
-                for member in members:
-                    result.members.append(recurse(member))
-                return result
+                node = WeightedNode([ WeightedEntry(pm.info,pm.cname,pm.node)
+                                      for pm in [recurse(m) for m in members] ])
             elif kind == 'RecordSet':
-                result = RecordSetNode(info,cname)
-                for member in members:
-                    result.members.append(recurse(member))
-                return result
+                node = RecordSetNode([ pm.node for pm in [recurse(m) for m in members ]])
             elif kind == 'Record':
                 spec = RecordSpec(json=data['value'])
-                result = RecordNode(info,cname,spec)
-                return result
+                node = RecordNode(spec)
             else:
                 raise Exception('Unknown kind: %s'%(kind))
+            return ParsedMember(info,cname,node)
 
-        return ResolutionTree(recurse(data))
-
-    @classmethod
-    def _get_cname(cls,entry):
-        entry_cname = entry.get('cname')
-        entry_cname_ttl = entry.get('cname_ttl')
-        if entry_cname != None and entry_cname_ttl != None:
-            cname = RecordSpec(rdtype=RecordType.CNAME,
-                               rdata=entry_cname,
-                               ttl=entry_cname_ttl)
+        if root_data != None:
+            return ResolutionTree(recurse(root_data).node)
         else:
-            cname = None
-        return cname
+            return ResolutionTree(None)
 
-    @classmethod
-    def _get_entry(cls,entry):
-        cname = cls._get_cname(entry)
-        entry_info = entry['info']
-        entry_node = entry['node']
-        node = cls._from_json_recursive(entry_node)
-        return ResourceEntry(entry_info,cname,node)
+    def json(self):
+        if self.root != None:
+            return self.root.to_json()
+        else:
+            return None
+
+    def print(self,indent='',file=sys.stdout):
+        if self.root == None:
+            print('%sEmpty'%(indent),file=file)
+        else:
+            self.root.print(indent=indent,file=file)
 
     @property
     def referenced_cnames(self):
         result = set()
 
-        def recurse(node):
-            if node.cname != None:
-                result.add(node.cname.rdata)
-            if node.members != None:
-                for member in node.members:
-                    recurse(member)
+        if self.root != None:
+            self.root.find_referenced_cnames(result)
 
-        recurse(self.root)
         return result
-
-    def delta(self,other):
-        if not isinstance(other,ResolutionTree):
-            raise TypeError('Delta can only be computed against another ResolutionTree')
-        from .delta import Delta
-        return Delta(self,other)
-
-class ResolutionNode:
-
-    def __init__(self,kind,info,cname):
-        self.kind = kind
-        self.info = info
-        self.cname = cname
-        self.members = None
-        self.value = None
-
-    def add(self,member):
-        self.members.append(member)
-
-    def json(self):
-        result = {
-            'kind': self.kind,
-            }
-        if self.info != None:
-            result['info'] = self.info
-        if self.cname != None:
-            result['cname'] = self.cname.rdata
-            result['cname_ttl'] = self.cname.ttl
-        if self.members != None:
-            jsChildren = []
-            for child in self.members:
-                # jsChild = { 'info': entry.info,
-                #             'node': entry.node.json() }
-                jsChildren.append(child.json())
-            result['members'] = jsChildren
-        if isinstance(self,RecordNode):
-            result['value'] = self.value.__dict__
-        return result
-
-    def __eq__(self,other):
-        return (isinstance(other,self.__class__) and
-                self.info == other.info and
-                self.cname == other.cname and
-                self.members == other.members and
-                self.value == other.value)
-
-class ResourceEntry:
-
-    def __init__(self,info,cname,node):
-        assert ((cname == None) or
-                (isinstance(cname,RecordSpec) and cname.rdtype == RecordType.CNAME))
-        assert node == None or isinstance(node,ResolutionNode)
-        self.info = info
-        self.cname = cname
-        self.node = node
-
-class GeoNode(ResolutionNode):
-
-    def __init__(self,info,cname):
-        super(GeoNode,self).__init__('Geo',info,cname)
-        self.members = []
-
-class WeightedNode(ResolutionNode):
-
-    def __init__(self,info,cname):
-        super(WeightedNode,self).__init__('Weighted',info,cname)
-        self.members = []
-
-    @property
-    def percentages(self):
-        return [int(w*100) for w in self.normalized_weights]
-
-    @property
-    def normalized_weights(self):
-        total = sum([member.info for member in self.members])
-        if total == 0:
-            return [1/len(members) for member in self.members]
-        else:
-            return [member.info/total for member in self.members]
-
-class LeafNode(ResolutionNode):
-
-    def __init__(self,kind,info,cname):
-        super(LeafNode,self).__init__(kind,info,cname)
-
-class RecordSetNode(LeafNode):
-
-    def __init__(self,info,cname):
-        super(RecordSetNode,self).__init__('RecordSet',info,cname)
-        self.members = []
-
-    def addRecord(self,record):
-        assert isinstance(record,RecordSpec)
-        self.members.append(RecordNode(None,None,record))
-
-class RecordNode(LeafNode):
-
-    def __init__(self,info,cname,value):
-        assert isinstance(value,RecordSpec)
-        super(RecordNode,self).__init__('Record',info,cname)
-        self.value = value
-
-    def __str__(self):
-        ttl = self.value.ttl
-        rdclass = RecordClass.as_str(self.value.rdclass)
-        rdtype = RecordType.as_str(self.value.rdtype)
-        rdata = self.value.rdata
-        return '%d %s %s %s'%(ttl,rdclass,rdtype,rdata)

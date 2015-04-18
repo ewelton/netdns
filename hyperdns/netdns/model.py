@@ -90,7 +90,7 @@ class ResourceData(object):
             if len(records) > 0:
                 result['records'] = records
         else:
-            for rec in self._recpool.records:
+            for rec in sorted(self._recpool.records):
                 records.append(rec.__dict__)
             result['records'] = records
         return result
@@ -556,7 +556,7 @@ class ZoneData(object):
         roots = set([res.name for res in self.resources])
         for n in cnames:
             rname = splitFqdnInZone(n,self.fqdn).rname
-            if rname != None:
+            if rname != None and rname in roots:
                 roots.remove(rname)
         for r in sorted(roots):
             yield self._resources[r]

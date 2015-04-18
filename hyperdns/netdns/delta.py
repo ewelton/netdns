@@ -1,198 +1,176 @@
-from .resolutiontree import (
-    GeoNode,
-    WeightedNode,
-    LeafNode,
-    RecordSetNode,
-    RecordNode
-)
+from hyperdns.netdns.resolutiontree import *
 
-def find_records(root):
-    result = set()
+def newtree_delta(tree1,tree2):
 
-    def recurse(node):
-        if isinstance(node,RecordNode):
-            result.add(node.value)
-        elif node.members != None:
-            for entry in node.members:
-                recurse(entry)
+    messages = []
 
-    recurse(root)
-    return frozenset(result)
+    def changed(msg):
+        assert isinstance(msg,str)
+        messages.append(msg)
 
-class NodeRef:
+    def gen_delta(node1,node2,indent=''):
+        if node1 == None and node2 == None:
+            return
 
-    def __init__(self,parent,index,node):
-        self.parent = parent
-        self.index = index
-        self.node = node
-
-    def __str__(self):
-        if self.parent == None:
-            pstr = 'None'
-        else:
-            pstr = self.parent.__class__.__name__
-        return '(%s,%s,%s)'%(pstr,self.index,self.node.__class__.__name__)
-
-def record_str(rec):
-    return '%s %s %s %s'%(rec.rdclass.name,rec.rdtype.name,rec._ttl,rec.rdata)
-
-class Delta:
-
-    def __init__(self,source,dest):
-        self.source = source
-        self.dest = dest
-
-    def lines(self):
-        return [s[-1:]+s[:-1] for s in sorted(
-                   ['%s-'%(path) for path in sorted(self.deletions)]+
-                   ['%s+'%(path) for path in sorted(self.additions)])]
-
-    def __str__(self):
-        return '\n'.join(self.lines())
-
-    def describe(self):
-        changes = []
-        t1 = self.source
-        t2 = self.dest
-
-        def changed(change):
-            assert isinstance(change,str)
-            changes.append(change)
-
-        def member_description(ref):
-            if isinstance(ref.parent,GeoNode):
-                return 'Region "%s"'%(ref.node.info)
-            elif isinstance(ref.parent,WeightedNode):
-                return 'Group %d'%(ref.index+1)
-            elif isinstance(ref.parent,RecordSetNode):
-                return 'Record set'
-            elif isinstance(ref.parent,RecordNode):
-                return 'Record'
-            elif isinstance(ref.node,GeoNode):
-                return 'Geo pool'
-            elif isinstance(ref.node,WeightedNode):
-                return 'Weighted pool'
-            elif isinstance(ref.node,RecordSetNode):
-                return 'Record set'
-            elif isinstance(ref.node,RecordNode):
-                return 'Record'
+        if node1 == None:
+            if isinstance(node2,GeoNode):
+                changed('%sAdd Geo node'%(indent))
+                gen_delta(GeoNode({}),node2,indent)
+                return
+            elif isinstance(node2,WeightedNode):
+                changed('%sAdd Weighted node'%(indent))
+                gen_delta(WeightedNode([]),node2,indent)
+                return
+            elif isinstance(node2,RecordSetNode):
+                changed('%sAdd Record Set'%(indent))
+                gen_delta(RecordSetNode([]),node2,indent)
+                return
+            elif isinstance(node2,RecordNode):
+                gen_delta_records(None,node2,indent)
+                return
             else:
-                raise TypeError('Unknown node type: %s'%(ref.node.__class__))
+                raise TypeError('Unknown node type: %s'%(node2.__class__.__name__))
 
-        def amend_suffix(extra,current):
-            if current == '':
-                return extra
+        elif node2 == None:
+            if isinstance(node1,GeoNode):
+                gen_delta(node1,GeoNode({}),indent)
+                changed('%sDel Geo node'%(indent))
+                return
+            elif isinstance(node1,WeightedNode):
+                gen_delta(node1,WeightedNode([]),indent)
+                changed('%sDel Weighted node'%(indent))
+                return
+            elif isinstance(node1,RecordSetNode):
+                gen_delta(node1,RecordSetNode([]),indent)
+                changed('%sDel Record Set'%(indent))
+                return
+            elif isinstance(node1,RecordNode):
+                gen_delta_records(node1,None,indent)
+                return
             else:
-                return extra+', '+current
+                raise TypeError('Unknown node type: %s'%(node1.__class__.__name__))
 
-        def recurse(ref1,ref2,suffix='',indent=0):
+        elif node1.__class__ != node2.__class__:
+            gen_delta(node1,None,indent)
+            gen_delta(None,node2,indent)
+            return
 
-            if suffix != '':
-                usesuffix = ' in '+suffix
-                addsuffix = ', '+suffix
-            else:
-                usesuffix = ''
-                addsuffix = ''
+        elif isinstance(node1,GeoNode) and isinstance(node2,GeoNode):
+            regions1 = node1.entries.keys()
+            regions2 = node2.entries.keys()
+            deleted = regions1 - regions2
+            added = regions2 - regions1
+            kept = regions1 & regions2
+            regions_by_children1 = { node1.entries[r].child: r for r in node1.entries.keys() }
+            regions_by_children2 = { node2.entries[r].child: r for r in node2.entries.keys() }
 
-            assert ref1 != None or ref2 != None
+            for child in regions_by_children1.keys():
+                region1 = regions_by_children1[child]
+                region2 = regions_by_children2.get(child)
+                if region2 != None and region2 != region1:
+                    # The children of the region entries are exactly the same, so
+                    # we don't need to traverse those. All we have to do is indicate
+                    # that the region codes have changed.
+                    changed('Rename %s -> %s'%(region1,region2))
 
-            if ref1 == None:
-                if isinstance(ref2.node,GeoNode):
-                    changed('Add %s%s'%(member_description(ref2),usesuffix))
-                    new_suffix = amend_suffix(member_description(ref2),suffix)
-                    new_ref1 = NodeRef(None,0,GeoNode(ref2.node.info,None))
-                    recurse(new_ref1,ref2,new_suffix,indent)
-                elif isinstance(ref2.node,WeightedNode):
-                    changed('Add %s%s'%(member_description(ref2),usesuffix))
-                    new_suffix = amend_suffix(member_description(ref2),suffix)
-                    new_ref1 = NodeRef(None,0,WeightedNode(ref2.node.info,None))
-                    recurse(new_ref1,ref2,new_suffix,indent)
-                elif isinstance(ref2.node,LeafNode):
-                    changed('Add %s%s'%(member_description(ref2),usesuffix))
-                    new_suffix = amend_suffix(member_description(ref2),suffix)
-                    new_ref1 = NodeRef(None,0,RecordSetNode(ref2.node.info,None))
-                    recurse(new_ref1,ref2,new_suffix,indent)
-                else:
-                    raise TypeError('Unknown node type: %s'%(ref2.node.__class__.__name__))
-            elif ref2 == None:
-                if isinstance(ref1.node,GeoNode):
-                    changed('Delete %s%s'%(member_description(ref1),usesuffix))
-                    new_suffix = amend_suffix(member_description(ref1),suffix)
-                    new_ref2 = NodeRef(None,0,GeoNode(ref1.node.info,None))
-                    recurse(ref1,new_ref2,new_suffix,indent)
-                elif isinstance(ref1.node,WeightedNode):
-                    changed('Delete %s%s'%(member_description(ref1),usesuffix))
-                    new_suffix = amend_suffix(member_description(ref1),suffix)
-                    new_ref2 = NodeRef(None,0,WeightedNode(ref1.node.info,None))
-                    recurse(ref1,new_ref2,new_suffix,indent)
-                elif isinstance(ref1.node,LeafNode):
-                    changed('Delete %s%s'%(member_description(ref1),usesuffix))
-                    new_suffix = amend_suffix(member_description(ref1),suffix)
-                    new_ref2 = NodeRef(None,0,RecordSetNode(ref1.node.info,None))
-                    recurse(ref1,new_ref2,new_suffix,indent)
-                else:
-                    raise TypeError('Unknown node type: %s'%(ref1.node.__class__.__name__))
-            elif isinstance(ref1.node,GeoNode) and isinstance(ref2.node,GeoNode):
-                regions1 = frozenset([m.info for m in ref1.node.members])
-                regions2 = frozenset([m.info for m in ref2.node.members])
-                added = regions2 - regions1
-                deleted = regions1 - regions2
-                same = regions1 & regions2
-                m_by_region1 = {m.info: m for m in ref1.node.members}
-                m_by_region2 = {m.info: m for m in ref2.node.members}
-                for region in sorted(deleted):
-                    recurse(NodeRef(ref1.node,region,m_by_region1[region]),None,suffix,indent+1)
-                for region in sorted(added):
-                    recurse(None,NodeRef(ref2.node,region,m_by_region2[region]),suffix,indent+1)
-                for region in sorted(same):
-                    recurse(NodeRef(ref1.node,region,m_by_region1[region]),
-                            NodeRef(ref2.node,region,m_by_region2[region]),suffix,indent+1)
-            elif isinstance(ref1.node,WeightedNode) and isinstance(ref2.node,WeightedNode):
-                records1 = [find_records(m) for m in ref1.node.members]
-                records2 = [find_records(m) for m in ref2.node.members]
+                    cname1 = node1.entries[region1].cname
+                    cname2 = node2.entries[region2].cname
 
-                weights1 = ref1.node.normalized_weights
-                weights2 = ref2.node.normalized_weights
-                i = 0
-                while i < len(ref1.node.members) and i < len(ref2.node.members):
-                    if weights1[i] != weights2[i]:
-                        changed('Change weight of group %d: %d%% -> %d%%'%(
-                            i+1,
-                            int(weights1[i]*100),
-                            int(weights2[i]*100)))
-                    recurse(NodeRef(ref1.node,i,ref1.node.members[i]),
-                            NodeRef(ref2.node,i,ref2.node.members[i]),
-                            suffix,indent+1)
-                    i += 1
-                while i < len(ref1.node.members):
-                    recurse(NodeRef(ref1.node,i,ref1.node.members[i]),None,
-                            suffix,indent+1)
-                    i += 1
-                while i < len(ref2.node.members):
-                    recurse(None,NodeRef(ref2.node,i,ref2.node.members[i]),
-                            suffix,indent+1)
-                    i += 1
-            elif isinstance(ref1.node,LeafNode) and isinstance(ref2.node,LeafNode):
-                records1 = find_records(ref1.node)
-                records2 = find_records(ref2.node)
-                recurse_records(records1,records2,usesuffix)
-            else:
-                raise TypeError('Unsupported node combination: %s and %s'%(
-                    ref1.node.__class__.__name__,ref2.node.__class__.__name__))
+                    if cname1 != cname2:
+                        cstr1 = '%s %d'%(cname1.rdata,cname1.ttl) if cname1 != None else None
+                        cstr2 = '%s %d'%(cname2.rdata,cname2.ttl) if cname2 != None else None
+                        changed('%sRegion "%s": Change CNAME %s -> %s'%(indent,region2,cstr1,cstr2))
 
-        def recurse_records(set1,set2,usesuffix):
-            added = set2 - set1
-            deleted = set1 - set2
-            for rec in sorted(deleted):
-                changed('Delete Record %s%s'%(record_str(rec),usesuffix))
-            for rec in sorted(added):
-                changed('Add Record %s%s'%(record_str(rec),usesuffix))
+                    deleted.remove(region1)
+                    added.remove(region2)
 
-        root_ref1 = None
-        root_ref2 = None
-        if t1.root != None:
-            root_ref1 = NodeRef(None,None,t1.root)
-        if t2.root != None:
-            root_ref2 = NodeRef(None,None,t2.root)
-        recurse(root_ref1,root_ref2)
-        return changes
+            for region in sorted(deleted):
+                # indent2 = '%s%-5s'%(indent,str(region)+': ')
+                indent2 = '%sRegion "%s": '%(indent,str(region))
+                gen_delta(node1.entries[region].child,None,indent2)
+                changed('%sDel region %s'%(indent,region))
+
+            for region in sorted(added):
+                changed('%sAdd region %s'%(indent,region))
+                # indent2 = '%s%-5s'%(indent,str(region)+': ')
+                indent2 = '%sRegion "%s": '%(indent,str(region))
+                gen_delta(None,node2.entries[region].child,indent2)
+
+            for region in sorted(kept):
+                # indent2 = '%s%-5s'%(indent,str(region)+': ')
+                indent2 = '%sRegion "%s": '%(indent,region)
+
+                cname1 = node1.entries[region].cname
+                cname2 = node2.entries[region].cname
+
+                if cname1 != cname2:
+                    cstr1 = '%s %d'%(cname1.rdata,cname1.ttl) if cname1 != None else None
+                    cstr2 = '%s %d'%(cname2.rdata,cname2.ttl) if cname2 != None else None
+                    changed('%sRegion "%s": Change CNAME %s -> %s'%(indent,region,cstr1,cstr2))
+
+                gen_delta(node1.entries[region].child,node2.entries[region].child,indent2)
+
+            return
+        elif isinstance(node1,WeightedNode) and isinstance(node2,WeightedNode):
+            index = 0
+            while index < len(node1.entries) and index < len(node2.entries):
+                entry1 = node1.entries[index]
+                entry2 = node2.entries[index]
+                if entry1.weight != entry2.weight:
+                    changed('%sGroup %d: Change weight %d%% -> %d%%'%(
+                        indent,
+                        index+1,
+                        int(100*entry1.weight),
+                        int(100*entry2.weight)))
+
+                cname1 = entry1.cname
+                cname2 = entry2.cname
+
+                if cname1 != cname2:
+                    cstr1 = '%s %d'%(cname1.rdata,cname1.ttl) if cname1 != None else None
+                    cstr2 = '%s %d'%(cname2.rdata,cname2.ttl) if cname2 != None else None
+                    changed('%sGroup %d: Change CNAME %s -> %s'%(indent,index+1,cstr1,cstr2))
+
+                if entry1.child.all_records != entry2.child.all_records:
+                    indent2 = '%sGroup %d: '%(indent,index+1)
+                    gen_delta_records(node1,node2,indent2)
+                index += 1
+            deli = len(node1.entries)-1
+            while deli >= index:
+                indent2 = '%sGroup %d: '%(indent,deli+1)
+                gen_delta_records(node1,None,indent2)
+                changed('%sDel group %d, weight %2.1f%%'%(indent,deli+1,100*node1.entries[deli].weight))
+                deli -= 1
+            addi = index
+            while addi < len(node2.entries):
+                changed('%sAdd group %d, weight %2.1f%%'%(indent,addi+1,100*node2.entries[addi].weight))
+                indent2 = '%sGroup %d: '%(indent,addi+1)
+                gen_delta_records(None,node2,indent2)
+                addi += 1
+
+            return
+        elif isinstance(node1,RecordSetNode) and isinstance(node2,RecordSetNode):
+            gen_delta_records(node1,node2,indent)
+            return
+        elif isinstance(node1,RecordNode) and isinstance(node2,RecordNode):
+            gen_delta_records(node1,node2,indent)
+            return
+
+        raise ValueError('Case is not covered (this should not happen) - %s and %s'%(
+                         node1.__class__.__name__,node2.__class__.__name__))
+
+    def gen_delta_records(node1,node2,indent=''):
+        records1 = node1.all_records if node1 != None else frozenset()
+        records2 = node2.all_records if node2 != None else frozenset()
+
+        deleted = records1 - records2
+        added = records2 - records1
+        kept = records1 & records2
+
+        for record in sorted(deleted):
+            changed('%sDel record %s'%(indent,str(RecordNode(record))))
+        for record in sorted(added):
+            changed('%sAdd record %s'%(indent,str(RecordNode(record))))
+
+    gen_delta(tree1.root,tree2.root)
+    return messages
