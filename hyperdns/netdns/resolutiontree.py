@@ -69,7 +69,7 @@ class GeoEntry:
 
 class GeoNode(TreeNode):
 
-    # entries: Map of RegionCodes -> TreeNode
+    # entries: Map of RegionCodes -> GeoEntry
     def __init__(self,entries):
         assert all([isinstance(key,RegionCodes) for key in entries.keys()])
         assert all([isinstance(value,GeoEntry) for value in entries.values()])
