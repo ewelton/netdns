@@ -233,10 +233,7 @@ class WeightedNode(TreeNode):
         for e in self.entries:
             e.child.find_all_records(result)
 
-class LeafNode(TreeNode):
-    pass
-
-class RecordSetNode(LeafNode):
+class RecordSetNode(TreeNode):
 
     def __init__(self,entries):
         assert all([isinstance(e,RecordNode) for e in entries])
@@ -274,7 +271,7 @@ class RecordSetNode(LeafNode):
         for e in self.entries:
             e.find_all_records(result)
 
-class RecordNode(LeafNode):
+class RecordNode(TreeNode):
 
     def __init__(self,record):
         assert isinstance(record,RecordSpec)
