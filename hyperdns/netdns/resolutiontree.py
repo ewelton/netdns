@@ -100,12 +100,13 @@ class GeoNode(TreeNode):
         for e in self.entries.values():
             e.child.find_all_records(result)
 
-    def to_json(self):
+    @property
+    def __dict__(self):
         result = { 'kind': 'Geo',
                    'members': [] }
         for key in sorted(self.entries.keys()):
             entry = self.entries[key]
-            member = entry.child.to_json()
+            member = entry.child.__dict__
             member['info'] = str(key)
             if entry.cname != None:
                 member['cname'] = entry.cname.rdata
@@ -209,11 +210,12 @@ class WeightedNode(TreeNode):
                               suffix=csuffix,
                               file=file)
 
-    def to_json(self):
+    @property
+    def __dict__(self):
         result = { 'kind': 'Weighted',
                    'members': [] }
         for entry in self.entries:
-            member = entry.child.to_json()
+            member = entry.child.__dict__
             member['info'] = int(100*entry.weight)
             if entry.cname != None:
                 member['cname'] = entry.cname.rdata
@@ -260,9 +262,10 @@ class RecordSetNode(LeafNode):
         for e in self.entries:
             e.print(indent+'    ',file=file)
 
-    def to_json(self):
+    @property
+    def __dict__(self):
         return { 'kind': 'RecordSet',
-                 'members': [e.to_json() for e in self.entries] }
+                 'members': [e.__dict__ for e in self.entries] }
 
     def find_referenced_cnames(self,result):
         pass
@@ -308,7 +311,8 @@ class RecordNode(LeafNode):
     def print(self,indent='',prefix='',suffix='',file=sys.stdout):
         print('%s%sRecord %s%s'%(indent,prefix,self,suffix),file=file)
 
-    def to_json(self):
+    @property
+    def __dict__(self):
         return { 'kind': 'Record',
                  'value': self.record.__dict__ }
 
@@ -368,9 +372,10 @@ class ResolutionTree:
         else:
             return ResolutionTree(None)
 
-    def json(self):
+    @property
+    def __dict__(self):
         if self.root != None:
-            return self.root.to_json()
+            return self.root.__dict__
         else:
             return None
 

@@ -83,7 +83,7 @@ class ResourceData(object):
         }
         records = []
         if self.rtree != None:
-            result['rtree'] = self.rtree.json()
+            result['rtree'] = self.rtree.__dict__
             for rec in self._recpool.records:
                 if rec.rdtype not in [RecordType.CNAME,RecordType.A,RecordType.AAAA]:
                     records.append(rec.__dict__)
