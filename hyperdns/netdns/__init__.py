@@ -79,6 +79,7 @@ from .names import (
     dotify,
     undotify,
     is_valid_zone_fqdn,
+    joinRnameZone,
     splitFqdn,
     splitFqdnInZone,
     isIPAddress,

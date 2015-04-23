@@ -84,6 +84,14 @@ def splitFqdn(fqdn):
 def domain_components(name):
     return list(filter(lambda x: len(x) > 0,name.split('.')))
 
+def joinRnameZone(rname,zone_fqdn):
+    rname = undotify(rname)
+    zone_fqdn = dotify(zone_fqdn)
+    if rname == '@':
+        return zone_fqdn
+    else:
+        return '%s.%s'%(rname,zone_fqdn)
+
 def splitFqdnInZone(fqdn,zone):
     fparts = domain_components(fqdn)
     zparts = domain_components(zone)
