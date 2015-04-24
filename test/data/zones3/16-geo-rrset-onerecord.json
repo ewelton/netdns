@@ -1,0 +1,162 @@
+{
+    "fqdn": "hypertest1.com.",
+    "resources": [
+        {
+            "is_implicit_in": null,
+            "name": "@",
+            "recpool": {
+                "null": {
+                    "2": {
+                        "exceptionOnBadTTL": false,
+                        "preferredTTL": null,
+                        "records": [
+                            {
+                                "class": "IN",
+                                "presence": "present",
+                                "rdata": "ns2.somedomain.com.",
+                                "source": null,
+                                "ttl": 86400,
+                                "type": "NS"
+                            },
+                            {
+                                "class": "IN",
+                                "presence": "present",
+                                "rdata": "ns1.somedomain.com.",
+                                "source": null,
+                                "ttl": 86400,
+                                "type": "NS"
+                            }
+                        ],
+                        "source": null,
+                        "type": "NS"
+                    },
+                    "6": {
+                        "exceptionOnBadTTL": false,
+                        "preferredTTL": null,
+                        "records": [
+                            {
+                                "class": "IN",
+                                "presence": "present",
+                                "rdata": "ns1.somedomain.com. admin.somedomain.com. 32 3600 600 604800 1800",
+                                "source": null,
+                                "ttl": 3600,
+                                "type": "SOA"
+                            }
+                        ],
+                        "source": null,
+                        "type": "SOA"
+                    }
+                }
+            },
+            "rtree": null
+        },
+        {
+            "is_implicit_in": null,
+            "name": "single",
+            "recpool": {
+                "null": {
+                    "1": {
+                        "exceptionOnBadTTL": false,
+                        "preferredTTL": null,
+                        "records": [
+                            {
+                                "class": "IN",
+                                "presence": "present",
+                                "rdata": "1.2.3.4",
+                                "source": null,
+                                "ttl": 300,
+                                "type": "A"
+                            }
+                        ],
+                        "source": null,
+                        "type": "A"
+                    }
+                }
+            },
+            "rtree": null
+        },
+        {
+            "is_implicit_in": null,
+            "name": "www",
+            "recpool": {},
+            "rtree": {
+                "kind": "Geo",
+                "members": [
+                    {
+                        "info": "Asia",
+                        "kind": "RecordSet",
+                        "members": [
+                            {
+                                "kind": "Record",
+                                "value": {
+                                    "class": "IN",
+                                    "presence": "present",
+                                    "rdata": "1.1.1.1",
+                                    "source": null,
+                                    "ttl": 315,
+                                    "type": "A"
+                                }
+                            },
+                            {
+                                "kind": "Record",
+                                "value": {
+                                    "class": "IN",
+                                    "presence": "present",
+                                    "rdata": "1.1.1.2",
+                                    "source": null,
+                                    "ttl": 310,
+                                    "type": "A"
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "info": "US West",
+                        "kind": "RecordSet",
+                        "members": [
+                            {
+                                "kind": "Record",
+                                "value": {
+                                    "class": "IN",
+                                    "presence": "present",
+                                    "rdata": "2.1.1.1",
+                                    "source": null,
+                                    "ttl": 325,
+                                    "type": "A"
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "info": "global",
+                        "kind": "RecordSet",
+                        "members": [
+                            {
+                                "kind": "Record",
+                                "value": {
+                                    "class": "IN",
+                                    "presence": "present",
+                                    "rdata": "3.1.1.1",
+                                    "source": null,
+                                    "ttl": 335,
+                                    "type": "A"
+                                }
+                            },
+                            {
+                                "kind": "Record",
+                                "value": {
+                                    "class": "IN",
+                                    "presence": "present",
+                                    "rdata": "3.1.1.2",
+                                    "source": null,
+                                    "ttl": 330,
+                                    "type": "A"
+                                }
+                            }
+                        ]
+                    }
+                ]
+            }
+        }
+    ]
+}

@@ -19,8 +19,15 @@ from .resolutiontree import ResolutionTree
 
 class ResourceData(object):
     
-    def __init__(self,zone,rname,recpool=None):
-        """
+    def __init__(self,zone,rname,recpool=None,rtree=None,is_implicit_in=None):
+        """This represents a resource in a zone.  This resource may or may
+        not be a 'root' node, meaning that it is not an implictitly managed
+        cname.
+        
+        If this is an implicitly generated cname, then is_implicit_in is the resource
+        whose rtree it participates.  the 'is_implicit' property can be used to
+        determine if this is an explicit, top level resource, existing on it's own
+        or whether or not it is an implicit cname.
         
         """
         self._zone=zone
@@ -28,38 +35,56 @@ class ResourceData(object):
         self._recpool=recpool
         if self._recpool==None:
             self._recpool=RecordPool()
-        self.rtree = None
+        self.rtree = rtree
+        self.is_implicit_in=is_implicit_in
         
+    @property
+    def is_implicit(self):
+        """Return true if this resource is the result of the implicit management
+        of geo records
+        """
+        return self.is_implicit_in!=None
     
-    def hasRecord(self,spec):
+
+    @property
+    def records(self):
+        records=set(self._recpool.records)
+        if self.rtree!=None:
+            for rec in self.rtree.records:
+                records.add(rec)
+        for r in records:
+            yield r
+ 
+    def has_non_resolution_record(self,spec):
         return self._recpool.contains(spec,matchPresence=True,matchSource=True)
 
-    def remove(self,spec):
-        self._recpool.remove(spec)
-
-    def add(self,spec_or_set):
-        self._recpool.add(spec_or_set)
-
-    def attach(self,spec_or_set):
-        self._recpool.attach(spec_or_set)
+    #def remove_non_resolution_record(self,spec):
+    #    self._recpool.remove(spec)
+    #
+    #def add_non_resolution_record(self,spec_or_set):
+    #    self._recpool.add(spec_or_set)
+    #
+    #def attach_non_resolution_record(self,spec_or_set):
+    #    self._recpool.attach(spec_or_set)
     
     @property
     def isEmpty(self):
         recs=self._recpool.selected_records(rdtype=RecordType.ANY,\
                             presence=RecordSpec.PRESENT,source=None)
-        return len(list(recs))==0
+        return len(list(recs))==0 and self.rtree!=None
 
     @property
-    def present_records(self):
+    def present_non_resolution_records(self):
         return self._recpool.selected_records(rdtype=RecordType.ANY,\
                             presence=RecordSpec.PRESENT,source=None)
     @property
-    def present_record_count(self):
-        return len(list(self.present_records))
+    def present_non_resolution_record_count(self):
+        return len(list(self.present_non_resolution_records))
     
     @property
-    def records(self):
-        return self._recpool.records
+    def non_resolution_records(self):
+        for rec in self._recpool.records:
+            yield rec
         
     @property
     def zone(self):
@@ -78,29 +103,74 @@ class ResourceData(object):
 
     @property
     def __dict__(self):
+        """Return a dictionary representation, suitable for rendering as JSON, of
+        the data for this resource.
+        
+        Example:
+            {
+                'name':<the local, non-qualified name of the resource>,
+                'rtree':<optional r-tree>,
+                'recpool':<the record pool object>,
+                'is_implicit_in':<the record pool object>
+            }
+            
+        Note: this will actively mutate the internal representation, to strip out and
+        lose any A, AAAA, or CNAME records in the pool.  It does not faithfully reproduce
+        the structure in memory.
+        """
         result = {
             'name': self._localname,
+            'rtree': None,
+            'recpool': self._recpool.__dict__,
+            'is_implicit_in':None
         }
-        records = []
         if self.rtree != None:
-            result['rtree'] = self.rtree.json()
-            for rec in self._recpool.records:
-                if rec.rdtype not in [RecordType.CNAME,RecordType.A,RecordType.AAAA]:
-                    records.append(rec.__dict__)
-            if len(records) > 0:
-                result['records'] = records
-        else:
-            for rec in sorted(self._recpool.records):
-                records.append(rec.__dict__)
-            result['records'] = records
+            result['rtree'] = self.rtree.__dict__
+        if self.is_implicit_in != None:
+            result['is_implicit_in']=self.is_implicit_in.name
         return result
-        
-        
 
+    def fill_in_from_dict(self,zone,data):
+        """
+        Take a json representation and return a resource data object and fill in the data.
+        
+        This is slightly different from the other forms of deserialization, because we
+        need to have elements in place and linked to their names in the zone prior to
+        unpacking the specific data elements - this is due to the 'implicit_in' link, which
+        may be cyclic.
+        
+        Currently
+        """
+        rname=data['name']
+        
+        if data.get('recpool')==None:
+            # earlier versions of the json used this format, so we do this until
+            # we can get the json representation standardized
+            if data.get('records')!=None:
+                for rec in data.get('records'):
+                    self._recpool.add(rec)
+        else:
+            self._recpool=RecordPool.from_dict(data['recpool'])
+        if data.get('rtree'):
+            self.rtree=ResolutionTree.from_dict(data['rtree'])
+        if data.get('is_implicit_in')!=None:
+            self.is_implicit_in=zone.getResource(data['is_implicit_in'])
+    @classmethod
+    def from_dict(cls,zone,data):
+        rd=ResourceData(zone,data['name'])
+        rd.fill_in_from_dict(zone,data)
+        return rd
         
 class ZoneData(object):
 
-    def __init__(self,fqdn=None,source=None,vendor=None):
+    def ensure_resource_data(self,rname):
+        rd=self._resources.get(self._local_rname(rname))
+        if rd==None:
+            rd=ResourceData(self,rname)
+            self._resources[rname]=rd
+        return rd
+        
+    def __init__(self,fqdn=None,source=None):
         """Create a zone model
         """
         self._nameservers=set()
@@ -108,7 +178,6 @@ class ZoneData(object):
         self._fqdn=fqdn
         self._resources={}
         self._source=source
-        self._vendor=vendor
 
     def _local_rname(self,rname):
         """Return the local name of a resource, checking to see if it is part
@@ -176,7 +245,7 @@ class ZoneData(object):
             del self._resources[rname]
         
 
-    def addResourceData(self,rname,spec_or_set):
+    def addResourceData(self,rname,spec_or_set_or_tree):
         """
         Attach data to a resource, which may or may not exist previously.  If `rname`
         is not in the zone, a new resource is created.  If `rname` is in this zone then
@@ -192,22 +261,57 @@ class ZoneData(object):
             if not rname.endswith(self.fqdn):
                 raise IncorrectZoneScope(rname)
         
+        # classify the inccoming data, afterwards only one will be set.
+        rtree=None
+        rspec=None
+        rset=None
+        rdtype=None
+        if isinstance(spec_or_set_or_tree,ResolutionTree):
+            rtree=spec_or_set_or_tree
+        elif isinstance(spec_or_set_or_tree,RecordSpec):
+            rspec=spec_or_set_or_tree
+            rdtype=spec_or_set_or_tree.rdtype
+        elif isinstance(spec_or_set_or_tree,RecordSet):
+            rset=spec_or_set_or_tree
+            rdtype=spec_or_set_or_tree.rdtype
+        else:
+            raise Exception("addResourceData not passed a spec or set or tree")
+            
+        # make sure this record exists in the zonedata
         rd=self._resources.get(self._local_rname(rname))
         if rd==None:
             rd=ResourceData(self,rname)
             self._resources[rname]=rd
         
-        if spec_or_set.rdtype==RecordType.NS:
-            if isinstance(spec_or_set,RecordSpec):
-                self._nameservers.add(self._full_rname_or_addr(spec_or_set.rdata))
-            else:
-                for rec in spec_or_set:
-                    self._nameservers.add(self._full_rname_or_addr(rec.rdata))
-        elif spec_or_set.rdtype==RecordType.SOA:
-            self._soa=spec_or_set
-            self._nameservers.add(self._full_rname_or_addr(self.soa_nameserver_fqdn))
+        if rtree!=None:
+            rd.rtree=rtree
+        else:
+            # for NS records, add this to the nameserver record
+            if rdtype==RecordType.NS:
+                if rspec!=None:
+                    self._nameservers.add(self._full_rname_or_addr(rspec.rdata))
+                else:
+                    for rec in rset:
+                        self._nameservers.add(self._full_rname_or_addr(rec.rdata))
+            # for SOA records, disallow multiple SOAs, only allow one
+            elif rdtype==RecordType.SOA:
+                if rset!=None:
+                    raise Exception("addResourceData asked to add multiple SOA records")
+                else:
+                    # if we have a record spec, add a _nameserver entry for this - not sure if
+                    # this is what we want or not yet.
+                    self._soa=rspec
+                    self._nameservers.add(self._full_rname_or_addr(self.soa_nameserver_fqdn))
             
-        rd.add(spec_or_set)
+            # resolution records must be in an attached rtree
+            if rdtype not in [RecordType.A,RecordType.AAAA,RecordType.CNAME]:
+                if rspec!=None:
+                    rd._recpool.add(rspec)
+                else:
+                    rd._recpool.add(rset)
+            else:
+                raise Exception("addResourceData asked to add A, AAAA, or CNAME records")
+                
 
     def attachResourceData(self,rname,spec_or_set):
         """
@@ -250,36 +354,32 @@ class ZoneData(object):
         return zone_fqdn.endswith(".")       
 
 
+
     @classmethod
     def fromDict(cls,jsondata):
         """
-        Create a :class:`ZoneData` object from a dict
+        """
+        print("Standardizing on _ names, ZoneData.fromDict() called - we should change this")
+        return cls.from_dict(jsondata)
         
-        Example::
-        
-            
+    @classmethod
+    def from_dict(cls,jsondata):
+        """
+        Create a :class:`ZoneData` object from a dict.
         """
         zd=ZoneData()
         
         zd._fqdn=jsondata.get('fqdn')
-        if zd._fqdn==None:
-            zd._fqdn=jsondata.get('name')
         if not cls.is_valid_zone_fqdn(zd._fqdn):
             raise InvalidZoneFQDNException(zd._fqdn)
             
-        for resource in jsondata.get('resources'):
-            rname = resource['name']
-            rd = ResourceData(zd,rname)
-            zd._resources[rname] = rd
-
-            records = resource.get('records')
-            if records != None:
-                for r in records:
-                    zd.attachResourceData(rname,RecordSpec(json=r))
-
-            rtree = resource.get('rtree')
-            if rtree != None:
-                rd.rtree = ResolutionTree.from_json(rtree)
+        for resource_json in jsondata.get('resources'):
+            rname = resource_json['name']
+            rd = zd.ensure_resource_data(rname)
+            
+        for resource_json in jsondata.get('resources'):
+            rname = resource_json['name']
+            rd=zd._resources.get(rname).fill_in_from_dict(zd,resource_json)
 
         return zd
         
@@ -548,6 +648,8 @@ class ZoneData(object):
 
     @property
     def _root_resources(self):
+        """
+        """
         cnames = set()
         for res in self.resources:
             if res.rtree != None:
@@ -556,8 +658,8 @@ class ZoneData(object):
         roots = set([res.name for res in self.resources])
         for n in cnames:
             rname = splitFqdnInZone(n,self.fqdn).rname
-            if rname != None and rname in roots:
-                roots.remove(rname)
+            if rname != None:
+                roots.discard(rname)
         for r in sorted(roots):
             yield self._resources[r]
     
@@ -567,7 +669,7 @@ class ZoneData(object):
         Return the zone data as a dict tree ready for json serialization.
         """
         resources = []
-        for res in self._root_resources:
+        for res in self.resources:
             resources.append(res.__dict__)
         return {
             'fqdn': self._fqdn,

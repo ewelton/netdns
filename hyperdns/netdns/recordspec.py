@@ -67,7 +67,7 @@ class RecordSpec(object):
                 json=None,
                 ttl=None,rdata=None,rdtype=None,rdclass=RecordClass.IN,
                 presence=None,present=None,absent=None,
-                source=None):
+                source=None,policy_group=None):
         """
         :raises MalformedRecordException: if there are any problems
         :raises MalformedTTLException: if the TTL value is invalid
@@ -91,6 +91,7 @@ class RecordSpec(object):
         
         # record the presence and source value
         self._presence=presence
+        self._policy_group=policy_group
         self._source=source
         # these values are calculated on demand and cached
         self._key=None
@@ -116,7 +117,8 @@ class RecordSpec(object):
                 rdtype=value.get('type')
                 rdclass=value.get('class',RecordClass.IN)
                 
-                # these two fields are optional
+                # these three fields are optional
+                self._policy_group=value.get('policy_group',self._policy_group)
                 self._presence=value.get('presence',self._presence)
                 self._source=value.get('source',self._source)
 
@@ -360,6 +362,10 @@ class RecordSpec(object):
         return self.changeSource(None)
         
     @property
+    def policy_group(self):
+        """Return the source of this record"""
+        return self._policy_group       
+    @property
     def source(self):
         """Return the source of this record"""
         return self._source       
@@ -489,7 +495,8 @@ class RecordSpec(object):
             'type':self.rdtype.name,
             'class':self.rdclass.name,
             'presence':self.presence,
-            'source':self.source
+            'source':self.source,
+            'policy_group':self.policy_group
         }
 
     @property

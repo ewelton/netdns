@@ -1,0 +1,293 @@
+{
+    "fqdn": "hypertest1.com.",
+    "resources": [
+        {
+            "is_implicit_in": null,
+            "name": "@",
+            "recpool": {
+                "null": {
+                    "2": {
+                        "exceptionOnBadTTL": false,
+                        "preferredTTL": null,
+                        "records": [
+                            {
+                                "class": "IN",
+                                "presence": "present",
+                                "rdata": "ns2.somedomain.com.",
+                                "source": null,
+                                "ttl": 86400,
+                                "type": "NS"
+                            },
+                            {
+                                "class": "IN",
+                                "presence": "present",
+                                "rdata": "ns1.somedomain.com.",
+                                "source": null,
+                                "ttl": 86400,
+                                "type": "NS"
+                            }
+                        ],
+                        "source": null,
+                        "type": "NS"
+                    },
+                    "6": {
+                        "exceptionOnBadTTL": false,
+                        "preferredTTL": null,
+                        "records": [
+                            {
+                                "class": "IN",
+                                "presence": "present",
+                                "rdata": "ns1.somedomain.com. admin.somedomain.com. 32 3600 600 604800 1800",
+                                "source": null,
+                                "ttl": 3600,
+                                "type": "SOA"
+                            }
+                        ],
+                        "source": null,
+                        "type": "SOA"
+                    }
+                }
+            },
+            "rtree": null
+        },
+        {
+            "is_implicit_in": null,
+            "name": "single",
+            "recpool": {
+                "null": {
+                    "1": {
+                        "exceptionOnBadTTL": false,
+                        "preferredTTL": null,
+                        "records": [
+                            {
+                                "class": "IN",
+                                "presence": "present",
+                                "rdata": "1.2.3.4",
+                                "source": null,
+                                "ttl": 300,
+                                "type": "A"
+                            }
+                        ],
+                        "source": null,
+                        "type": "A"
+                    }
+                }
+            },
+            "rtree": null
+        },
+        {
+            "is_implicit_in": null,
+            "name": "www",
+            "recpool": {},
+            "rtree": {
+                "kind": "Geo",
+                "members": [
+                    {
+                        "cname": "www-asia.hypertest1.com.",
+                        "cname_ttl": 900,
+                        "info": "Asia",
+                        "kind": "Weighted",
+                        "members": [
+                            {
+                                "cname": "www-asia-1.hypertest1.com.",
+                                "cname_ttl": 900,
+                                "info": 45,
+                                "kind": "RecordSet",
+                                "members": [
+                                    {
+                                        "kind": "Record",
+                                        "value": {
+                                            "class": "IN",
+                                            "presence": "present",
+                                            "rdata": "1.1.1.2",
+                                            "source": null,
+                                            "ttl": 30,
+                                            "type": "A"
+                                        }
+                                    },
+                                    {
+                                        "kind": "Record",
+                                        "value": {
+                                            "class": "IN",
+                                            "presence": "present",
+                                            "rdata": "1.1.1.1",
+                                            "source": null,
+                                            "ttl": 30,
+                                            "type": "A"
+                                        }
+                                    }
+                                ]
+                            },
+                            {
+                                "cname": "www-asia-2.hypertest1.com.",
+                                "cname_ttl": 900,
+                                "info": 54,
+                                "kind": "RecordSet",
+                                "members": [
+                                    {
+                                        "kind": "Record",
+                                        "value": {
+                                            "class": "IN",
+                                            "presence": "present",
+                                            "rdata": "2.2.2.2",
+                                            "source": null,
+                                            "ttl": 30,
+                                            "type": "A"
+                                        }
+                                    },
+                                    {
+                                        "kind": "Record",
+                                        "value": {
+                                            "class": "IN",
+                                            "presence": "present",
+                                            "rdata": "2.2.2.1",
+                                            "source": null,
+                                            "ttl": 30,
+                                            "type": "A"
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "cname": "www-us.hypertest1.com.",
+                        "cname_ttl": 900,
+                        "info": "US East",
+                        "kind": "Weighted",
+                        "members": [
+                            {
+                                "cname": "www-us-1.hypertest1.com.",
+                                "cname_ttl": 900,
+                                "info": 42,
+                                "kind": "RecordSet",
+                                "members": [
+                                    {
+                                        "kind": "Record",
+                                        "value": {
+                                            "class": "IN",
+                                            "presence": "present",
+                                            "rdata": "3.3.3.2",
+                                            "source": null,
+                                            "ttl": 30,
+                                            "type": "A"
+                                        }
+                                    },
+                                    {
+                                        "kind": "Record",
+                                        "value": {
+                                            "class": "IN",
+                                            "presence": "present",
+                                            "rdata": "3.3.3.1",
+                                            "source": null,
+                                            "ttl": 30,
+                                            "type": "A"
+                                        }
+                                    }
+                                ]
+                            },
+                            {
+                                "cname": "www-us-2.hypertest1.com.",
+                                "cname_ttl": 900,
+                                "info": 57,
+                                "kind": "RecordSet",
+                                "members": [
+                                    {
+                                        "kind": "Record",
+                                        "value": {
+                                            "class": "IN",
+                                            "presence": "present",
+                                            "rdata": "4.4.4.2",
+                                            "source": null,
+                                            "ttl": 30,
+                                            "type": "A"
+                                        }
+                                    },
+                                    {
+                                        "kind": "Record",
+                                        "value": {
+                                            "class": "IN",
+                                            "presence": "present",
+                                            "rdata": "4.4.4.1",
+                                            "source": null,
+                                            "ttl": 30,
+                                            "type": "A"
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "cname": "www-eu.hypertest1.com.",
+                        "cname_ttl": 900,
+                        "info": "global",
+                        "kind": "Weighted",
+                        "members": [
+                            {
+                                "cname": "www-eu-1.hypertest1.com.",
+                                "cname_ttl": 900,
+                                "info": 33,
+                                "kind": "RecordSet",
+                                "members": [
+                                    {
+                                        "kind": "Record",
+                                        "value": {
+                                            "class": "IN",
+                                            "presence": "present",
+                                            "rdata": "5.5.5.2",
+                                            "source": null,
+                                            "ttl": 30,
+                                            "type": "A"
+                                        }
+                                    },
+                                    {
+                                        "kind": "Record",
+                                        "value": {
+                                            "class": "IN",
+                                            "presence": "present",
+                                            "rdata": "5.5.5.1",
+                                            "source": null,
+                                            "ttl": 30,
+                                            "type": "A"
+                                        }
+                                    }
+                                ]
+                            },
+                            {
+                                "cname": "www-eu-2.hypertest1.com.",
+                                "cname_ttl": 900,
+                                "info": 66,
+                                "kind": "RecordSet",
+                                "members": [
+                                    {
+                                        "kind": "Record",
+                                        "value": {
+                                            "class": "IN",
+                                            "presence": "present",
+                                            "rdata": "6.6.6.2",
+                                            "source": null,
+                                            "ttl": 30,
+                                            "type": "A"
+                                        }
+                                    },
+                                    {
+                                        "kind": "Record",
+                                        "value": {
+                                            "class": "IN",
+                                            "presence": "present",
+                                            "rdata": "6.6.6.1",
+                                            "source": null,
+                                            "ttl": 30,
+                                            "type": "A"
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            }
+        }
+    ]
+}
