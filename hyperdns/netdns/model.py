@@ -102,7 +102,7 @@ class ResourceData(object):
         return "%s.%s" % (self.name,self.zone.fqdn)
 
     @property
-    def __dict__(self):
+    def to_json(self):
         """Return a dictionary representation, suitable for rendering as JSON, of
         the data for this resource.
         
@@ -121,18 +121,18 @@ class ResourceData(object):
         result = {
             'name': self._localname,
             'rtree': None,
-            'recpool': self._recpool.__dict__,
+            'recpool': self._recpool.to_json,
             'is_implicit_in':None
         }
         if self.rtree != None:
-            result['rtree'] = self.rtree.__dict__
+            result['rtree'] = self.rtree.to_json
         if self.is_implicit_in != None:
             result['is_implicit_in']=self.is_implicit_in.name
         return result
 
-    def fill_in_from_dict(self,zone,data):
+    def fill_in_from_json(self,zone,data):
         """
-        Take a json representation and return a resource data object and fill in the data.
+        Rebuild this resource from the provided data.
         
         This is slightly different from the other forms of deserialization, because we
         need to have elements in place and linked to their names in the zone prior to
@@ -150,20 +150,32 @@ class ResourceData(object):
                 for rec in data.get('records'):
                     self._recpool.add(rec)
         else:
-            self._recpool=RecordPool.from_dict(data['recpool'])
+            self._recpool=RecordPool.from_json(data['recpool'])
         if data.get('rtree'):
-            self.rtree=ResolutionTree.from_dict(data['rtree'])
+            self.rtree=ResolutionTree.from_json(data['rtree'])
         if data.get('is_implicit_in')!=None:
             self.is_implicit_in=zone.getResource(data['is_implicit_in'])
     @classmethod
-    def from_dict(cls,zone,data):
+    def from_json(cls,zone,data):
+        """
+        Take a json representation and return a resource data object and fill in the data.
+        
+        The zone may be None, in the case of deserializing a resource data object in a
+        stand alone context.
+        """
         rd=ResourceData(zone,data['name'])
-        rd.fill_in_from_dict(zone,data)
+        rd.fill_in_from_json(zone,data)
         return rd
         
 class ZoneData(object):
+    """
+    """
 
     def ensure_resource_data(self,rname):
+        """
+        Make sure a resource data exists, creating it if we need to, but otherwise
+        returning the existing ResourceData with the corresponding name.
+        """
         rd=self._resources.get(self._local_rname(rname))
         if rd==None:
             rd=ResourceData(self,rname)
@@ -171,7 +183,7 @@ class ZoneData(object):
         return rd
         
     def __init__(self,fqdn=None,source=None):
-        """Create a zone model
+        """Create an empty zone model
         """
         self._nameservers=set()
         self._soa=None
@@ -239,11 +251,12 @@ class ZoneData(object):
         :param rname: the local name (without zone) of the resource to delete
         :returns: nothing
         """
-        if rname in self._resources.keys():
-            #for record in self._resources[rname].records:
-            #
-            del self._resources[rname]
-        
+        resource=self._resources.get(rname)
+        if resource!=None:
+            if other_resource in self._resources.values():
+                if other_resource.is_implicit_in==resource:
+                    raise CanNotDeleteResourceUntilItIsNotLongerUsed()
+            del self._resource[rname]
 
     def addResourceData(self,rname,spec_or_set_or_tree):
         """
@@ -313,7 +326,7 @@ class ZoneData(object):
                 raise Exception("addResourceData asked to add A, AAAA, or CNAME records")
                 
 
-    def attachResourceData(self,rname,spec_or_set):
+    def DEPRECATED_attachResourceData(self,rname,spec_or_set):
         """
         Attach data to a resource, which may or may not exist previously.  If `rname`
         is not in the zone, a new resource is created.  If `rname` is in this zone then
@@ -355,15 +368,9 @@ class ZoneData(object):
 
 
 
-    @classmethod
-    def fromDict(cls,jsondata):
-        """
-        """
-        print("Standardizing on _ names, ZoneData.fromDict() called - we should change this")
-        return cls.from_dict(jsondata)
         
     @classmethod
-    def from_dict(cls,jsondata):
+    def from_json(cls,jsondata):
         """
         Create a :class:`ZoneData` object from a dict.
         """
@@ -372,16 +379,36 @@ class ZoneData(object):
         zd._fqdn=jsondata.get('fqdn')
         if not cls.is_valid_zone_fqdn(zd._fqdn):
             raise InvalidZoneFQDNException(zd._fqdn)
-            
+        
+        # scan the resource list and create placeholders for all of the resources
+        # named - these will have no data in them, but must exist so that we can
+        # deserialize the resolution trees and fill in the "is_implicit_in" field,
+        # which will point to a pre-existing resource data element, assuming it is
+        # created in this pass
         for resource_json in jsondata.get('resources'):
             rname = resource_json['name']
             rd = zd.ensure_resource_data(rname)
             
+        # now assign data to each of the resources, resolving any cross references
+        # 'is_implicit_in'
         for resource_json in jsondata.get('resources'):
             rname = resource_json['name']
-            rd=zd._resources.get(rname).fill_in_from_dict(zd,resource_json)
+            rd=zd._resources.get(rname).fill_in_from_json(zd,resource_json)
 
         return zd
+
+    @property
+    def to_json(self):
+        """
+        Return the zone data as a dict ready for json serialization.
+        """
+        resources = []
+        for res in self.resources:
+            resources.append(res.to_json())
+        return {
+            'fqdn': self._fqdn,
+            'resources': resources,
+        }
         
     @classmethod
     def fromJsonText(cls,jsontext):
@@ -621,8 +648,10 @@ class ZoneData(object):
     @property
     def resources(self):
         """
-        Generator over resources associated with this zone, in sorted alphabetical
-        order by resource name:
+        Generator over all resources associated with this zone, in sorted alphabetical
+        order by resource name.  All resources, whether defined in resolution trees or
+        not are included.  See _root_resources to get just the resources that are not
+        part of a resolution tree.
         
         Example::
         
@@ -649,6 +678,9 @@ class ZoneData(object):
     @property
     def _root_resources(self):
         """
+        Return all of the resources which are not referenced by resolution trees.
+        
+        Question: is this used - if not, let's get rid of it.
         """
         cnames = set()
         for res in self.resources:
@@ -663,15 +695,3 @@ class ZoneData(object):
         for r in sorted(roots):
             yield self._resources[r]
     
-    @property
-    def __dict__(self):
-        """
-        Return the zone data as a dict tree ready for json serialization.
-        """
-        resources = []
-        for res in self.resources:
-            resources.append(res.__dict__)
-        return {
-            'fqdn': self._fqdn,
-            'resources': resources,
-        }

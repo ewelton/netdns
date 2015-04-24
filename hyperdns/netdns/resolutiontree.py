@@ -7,6 +7,54 @@ from .recordclass import RecordClass
 import sys
 import abc
 
+class PrintVisitor(object):
+    """
+    """
+    def __init__(self,file=sys.stdout):
+        self.file=file
+        
+    def print_node(self,node,indent='',prefix='',suffix=''):
+        if isinstance(node,GeoNode):
+            self._print_geo_node(node,indent,prefix,suffix)
+        elif isinstance(node,WeightedNode):
+            self._print_weighted_node(node,indent,prefix,suffix)
+        elif isinstance(node,RecordSetNode):
+            self._print_record_set_node(node,indent,prefix,suffix)
+        elif isinstance(node,RecordNode):
+            self._print_record_node(node,indent,prefix,suffix)
+        else:
+            raise Exception('Unknown %s' % node.__class__.__name__)
+    
+    def _print_weighted_node(self,node,indent='',prefix='',suffix=''):
+        print('%s%sWeighted%s'%(indent,prefix,suffix),file=self.file)
+        for entry in node.entries:
+            csuffix = ' (weight %2.1f%%)'%(100*entry.weight)
+            if entry.cname != None:
+                csuffix += '; '+str(RecordNode(entry.cname))
+            self._print_node(entry.child,indent=indent+'    ',
+                              prefix='Group %d: '%(entry.index+1),
+                              suffix=csuffix
+                              )
+    def _print_geo_node(self,indent='',prefix='',suffix=''):
+        print('%s%sGeo%s'%(indent,prefix,suffix),file=self.file)
+        for key in sorted(self.entries.keys()):
+            entry = self.entries[key]
+            if entry.cname == None:
+                csuffix = ''
+            else:
+                csuffix = '; '+str(RecordNode(entry.cname))
+            self._print_node(entry.child,indent=indent+'    ',
+                              prefix='Region "%s": '%(key),
+                              suffix=csuffix)
+
+    def _print_record_set_node(self,indent='',prefix='',suffix=''):
+        print('%s%sRecordSet%s'%(indent,prefix,suffix),file=self.file)
+        for e in self.entries:
+            self._print_node(e,indent=indent+'    ')
+
+    def _print_record_node(self,indent='',prefix='',suffix=''):
+        print('%s%sRecord %s%s'%(indent,prefix,self,suffix),file=self.file)
+
 class PolicyPathElt(object):
     """A Policy Path Elt contains a segment in the auto-generated label, the policy style
     for the node that contains it, and then the qualifications for that routing policy (which
@@ -288,7 +336,7 @@ class GeoNode(RoutingPolicyNode):
             e.child.find_all_records(result)
 
     @property
-    def __dict__(self):
+    def to_json(self):
         result = { 'kind': self.routing_policy,
                    'members': [] }
         for key in sorted(self.entries.keys()):
@@ -301,21 +349,7 @@ class GeoNode(RoutingPolicyNode):
             result['members'].append(member)
         return result
 
-    def to_json(self):
-        return self.__dict__
         
-    def print(self,indent='',prefix='',suffix='',file=sys.stdout):
-        print('%s%sGeo%s'%(indent,prefix,suffix),file=file)
-        for key in sorted(self.entries.keys()):
-            entry = self.entries[key]
-            if entry.cname == None:
-                csuffix = ''
-            else:
-                csuffix = '; '+str(RecordNode(entry.cname))
-            entry.child.print(indent=indent+'    ',
-                              prefix='Region "%s": '%(key),
-                              suffix=csuffix,
-                              file=file)
 
 
 class WeightedEntry(RoutingPolicyEntry):
@@ -391,22 +425,7 @@ class WeightedNode(RoutingPolicyNode):
         return (isinstance(other,WeightedNode) and
                 other.entries == self.entries)
 
-    def print(self,indent='',prefix='',suffix='',file=sys.stdout):
-        print('%s%sWeighted%s'%(indent,prefix,suffix),file=file)
-        for entry in self.entries:
-            csuffix = ' (weight %2.1f%%)'%(100*entry.weight)
-            if entry.cname != None:
-                csuffix += '; '+str(RecordNode(entry.cname))
-            entry.child.print(indent=indent+'    ',
-                              prefix='Group %d: '%(entry.index+1),
-                              suffix=csuffix,
-                              file=file)
-
     def to_json(self):
-        return self.__dict__
-         
-    @property
-    def __dict__(self):
         result = { 'kind': self.policy_style,
                    'members': [] }
         for entry in self.entries:
@@ -455,16 +474,8 @@ class RecordSetNode(LeafNode):
         return (isinstance(other,RecordSetNode) and
                 other.entries == self.entries)
 
-    def print(self,indent='',prefix='',suffix='',file=sys.stdout):
-        print('%s%sRecordSet%s'%(indent,prefix,suffix),file=file)
-        for e in self.entries:
-            e.print(indent+'    ',file=file)
 
     def to_json(self):
-        return self.__dict__
-        
-    @property
-    def __dict__(self):
         return { 'kind': self.policy_style,
                  'members': [e.to_json() for e in self.entries] }
 
@@ -511,12 +522,10 @@ class RecordNode(LeafNode):
         rdata = self.record.rdata
         return '%d %s %s %s'%(ttl,rdclass,rdtype,rdata)
 
-    def print(self,indent='',prefix='',suffix='',file=sys.stdout):
-        print('%s%sRecord %s%s'%(indent,prefix,self,suffix),file=file)
 
     def to_json(self):
         return { 'kind': self.policy_style,
-                 'value': self.record.__dict__ }
+                 'value': self.record.to_json() }
 
     def find_referenced_cnames(self,result):
         pass
@@ -534,10 +543,6 @@ class ResolutionTree:
     @property
     def root(self):
         return self._root
-
-    @classmethod
-    def from_dict(cls,root_data):
-        return ResolutionTree.from_json(root_data)
         
     @staticmethod
     def from_json(root_data):
@@ -589,16 +594,11 @@ class ResolutionTree:
         else:
             return ResolutionTree(None)
 
-
-    def json(self):
-        print("ResolutionTree.json() method called - need to standardize on a set of serialization methods")
-        return self.__dict__
     
-    @property
-    def __dict__(self):
+    def to_json(self):
         """Returns a dictionary suitable for rendering by json.dumps()"""
         if self.root != None:
-            return self.root.__dict__
+            return self.root.to_json()
         else:
             return None
 
@@ -606,7 +606,8 @@ class ResolutionTree:
         if self.root == None:
             print('%sEmpty'%(indent),file=file)
         else:
-            self.root.print(indent=indent,file=file)
+            visitor=PrintVisitor(file)
+            visitor.print_node(self.root,indent=indent)
             
     def build_record_map(self):
         return PolicyMapBuilder(self.root)
@@ -614,7 +615,7 @@ class ResolutionTree:
     @property
     def referenced_cnames(self):
         """Not sure if this returns the implicit names, or any cname that is part of the
-        tree.
+        tree.  I think this is just the implicit cnames - question... where is this used?
         """
         result = set()
 
