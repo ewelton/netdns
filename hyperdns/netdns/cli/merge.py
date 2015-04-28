@@ -24,7 +24,7 @@ def merge(ctx,**kwargs):
     try:
         jsonobject=json.loads(src1_input_data)
         try:
-            zonedata1=ZoneData.fromDict(jsonobject)
+            zonedata1=ZoneData.from_json(jsonobject)
         except Exception as E:
             click.echo("Syntactically valid, semantically invalid JSON for source 1 %s" % E)
             raise
@@ -45,7 +45,7 @@ def merge(ctx,**kwargs):
     try:
         jsonobject=json.loads(src2_input_data)
         try:
-            zonedata2=ZoneData.fromDict(jsonobject)
+            zonedata2=ZoneData.from_json(jsonobject)
         except Exception as E:
             click.echo("Syntactically valid, semantically invalid JSON for source 2 %s" % E)
             raise

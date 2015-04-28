@@ -18,7 +18,7 @@ def xlate(ctx,**kwargs):
     try:
         jsonobject=json.loads(input_data)
         try:
-            zonedata=ZoneData.fromDict(jsonobject)
+            zonedata=ZoneData.from_json(jsonobject)
         except Exception as E:
             click.echo("Syntactically valid, semantically invalid JSON:%s" % E)
             raise

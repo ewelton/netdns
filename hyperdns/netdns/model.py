@@ -250,7 +250,7 @@ class ZoneData(object):
 
 
     @classmethod
-    def fromDict(cls,jsondata):
+    def from_json(cls,jsondata):
         """
         Create a :class:`ZoneData` object from a dict
         
@@ -290,7 +290,7 @@ class ZoneData(object):
             jsondata=json.loads(jsontext)
         except Exception as E:
             raise MalformedJsonZoneData(E)
-        return cls.fromDict(jsondata)
+        return cls.from_json(jsondata)
         
         
     @classmethod

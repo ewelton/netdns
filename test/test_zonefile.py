@@ -207,7 +207,7 @@ class TestCase(unittest.TestCase):
         assert zone.fqdn=='example1.com.'
         
     def test_create_zone_from_dict(self):
-        zone=ZoneData.fromDict(example_com_dict)
+        zone=ZoneData.from_json(example_com_dict)
         assert len(list(zone.resources))==9
         assert zone.fqdn=='example1.com.'
 

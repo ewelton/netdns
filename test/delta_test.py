@@ -11,7 +11,7 @@ import sys
 def get_resource_from_file(filename,rname):
     with open(filename) as f:
         data = json.load(f)
-    zd = ZoneData.fromDict(data)
+    zd = ZoneData.from_json(data)
     return zd.getResource(rname)
 
 def rtree_from_file(filename,rname):
