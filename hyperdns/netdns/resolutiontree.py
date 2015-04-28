@@ -3,6 +3,11 @@ from .recordspec import RecordSpec
 from .recordclass import RecordClass
 import sys
 
+class RoutingPolicyEntry:
+
+    def __init__(self):
+        pass
+
 class RoutingPolicyNode:
 
     @property
@@ -39,9 +44,10 @@ class RegionCodes:
     def __str__(self):
         return ','.join(sorted(self.codes))
 
-class GeoEntry:
+class GeoEntry(RoutingPolicyEntry):
 
     def __init__(self,cname,child):
+        super(GeoEntry,self).__init__()
         assert cname == None or isinstance(cname,RecordSpec)
         assert isinstance(child,RoutingPolicyNode)
         self._cname = cname
@@ -127,9 +133,10 @@ class GeoNode(RoutingPolicyNode):
                               suffix=csuffix,
                               file=file)
 
-class WeightedEntry:
+class WeightedEntry(RoutingPolicyEntry):
 
     def __init__(self,weight,cname,child,index=None):
+        super(WeightedEntry,self).__init__()
         assert isinstance(index,int) or index == None
         assert isinstance(weight,int) or isinstance(weight,float)
         assert isinstance(child,RoutingPolicyNode)
