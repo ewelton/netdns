@@ -34,12 +34,43 @@ class RoutingPolicyEntry:
         return self.key.__hash__()
         
 class RoutingPolicyNode:
+    """
+    RoutingPolicyNode is a root class for node, and provides an all_records method that is a wrapper around
+    the actual recursive method find_all_records(), which appears to be on the sub-nodes and which takes
+    a result map that gets filled in as the tree is recursed.
 
+    the all_records() might not be actually used.
+    
+    A RoutingPolicyNode defines a policy_style, which is either 'Geo' or 'Weighted'.  the policy can also
+    be either 'Record' or 'RecordSet'
+    """
+    def __init__(self,policy_style=None):
+        self._policy_style=policy_style
+        
+    @property
+    def policy_style(self):
+        """
+        A RoutingPolicyNode defines a policy_style, which is either 'Geo' or 'Weighted'.
+        """
+        return self._policy_style
+    
+    """
+    To get all of the records underneath a given node, call this.  It loses the policy_group
+    and so we'll need to pass something to find_all_records to build that up.
+    
+    find_all_records is the recursive part?
+    """
     @property
     def all_records(self):
         result = set()
         self.find_all_records(result)
         return frozenset(result)
+
+    @abc.abstractmethod
+    def find_all_records(self,result):
+        """Each node type must provide a means of iterating over all the records representing
+        the ultimate leaf nodes of the RoutingPolicyTree rooted at this node.
+        """
 
 class RegionCodes:
 
@@ -99,6 +130,7 @@ class GeoNode(RoutingPolicyNode):
 
     # entries: Map of RegionCodes -> GeoEntry
     def __init__(self,entries):
+        super(GeoNode,self).__init__(policy_style='Geo')
         assert all([isinstance(key,RegionCodes) for key in entries.keys()])
         assert all([isinstance(value,GeoEntry) for value in entries.values()])
         self._entries = entries
@@ -196,6 +228,7 @@ class WeightedEntry(RoutingPolicyEntry):
 class WeightedNode(RoutingPolicyNode):
 
     def __init__(self,entries):
+        super(WeightedNode,self).__init__(policy_style='Weighted')
         assert all([isinstance(e,WeightedEntry) for e in entries])
 
         total_weight = sum([e.weight for e in entries])
@@ -262,6 +295,8 @@ class WeightedNode(RoutingPolicyNode):
 class RecordSetNode(RoutingPolicyNode):
 
     def __init__(self,entries):
+        super(RecordSetNode,self).__init__(policy_style='RecordSet')
+        
         assert all([isinstance(e,RecordNode) for e in entries])
         self._entries = entries
 
@@ -300,6 +335,7 @@ class RecordSetNode(RoutingPolicyNode):
 class RecordNode(RoutingPolicyNode):
 
     def __init__(self,record):
+        super(RecordNode,self).__init__(policy_style='Record')
         assert isinstance(record,RecordSpec)
         self._record = record
 
