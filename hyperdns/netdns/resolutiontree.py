@@ -3,7 +3,7 @@ from .recordspec import RecordSpec
 from .recordclass import RecordClass
 import sys
 
-class TreeNode:
+class RoutingPolicyNode:
 
     @property
     def all_records(self):
@@ -43,7 +43,7 @@ class GeoEntry:
 
     def __init__(self,cname,child):
         assert cname == None or isinstance(cname,RecordSpec)
-        assert isinstance(child,TreeNode)
+        assert isinstance(child,RoutingPolicyNode)
         self._cname = cname
         self._child = child
 
@@ -67,7 +67,7 @@ class GeoEntry:
                 other.cname == self.cname and
                 other.child == self.child)
 
-class GeoNode(TreeNode):
+class GeoNode(RoutingPolicyNode):
 
     # entries: Map of RegionCodes -> GeoEntry
     def __init__(self,entries):
@@ -132,7 +132,7 @@ class WeightedEntry:
     def __init__(self,weight,cname,child,index=None):
         assert isinstance(index,int) or index == None
         assert isinstance(weight,int) or isinstance(weight,float)
-        assert isinstance(child,TreeNode)
+        assert isinstance(child,RoutingPolicyNode)
         self._index = index
         self._weight = weight
         self._cname = cname
@@ -167,7 +167,7 @@ class WeightedEntry:
                 other.weight == self.weight and
                 other.child == self.child)
 
-class WeightedNode(TreeNode):
+class WeightedNode(RoutingPolicyNode):
 
     def __init__(self,entries):
         assert all([isinstance(e,WeightedEntry) for e in entries])
@@ -233,7 +233,7 @@ class WeightedNode(TreeNode):
         for e in self.entries:
             e.child.find_all_records(result)
 
-class RecordSetNode(TreeNode):
+class RecordSetNode(RoutingPolicyNode):
 
     def __init__(self,entries):
         assert all([isinstance(e,RecordNode) for e in entries])
@@ -271,7 +271,7 @@ class RecordSetNode(TreeNode):
         for e in self.entries:
             e.find_all_records(result)
 
-class RecordNode(TreeNode):
+class RecordNode(RoutingPolicyNode):
 
     def __init__(self,record):
         assert isinstance(record,RecordSpec)
@@ -322,7 +322,7 @@ class RecordNode(TreeNode):
 class ResolutionTree:
 
     def __init__(self,root):
-        assert root == None or isinstance(root,TreeNode)
+        assert root == None or isinstance(root,RoutingPolicyNode)
         self._root = root
 
     @property
