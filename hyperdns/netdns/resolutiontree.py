@@ -1,3 +1,6 @@
+"""
+The ResolutionTree consists of RoutingPolicyNodes which provide maps of kids.
+"""
 from .recordtype import RecordType
 from .recordspec import RecordSpec
 from .recordclass import RecordClass
@@ -127,7 +130,11 @@ class GeoEntry(RoutingPolicyEntry):
                 other.child == self.child)
 
 class GeoNode(RoutingPolicyNode):
-
+    """Geo nodes represent an entire mapping layer for geo.  A GeoNode does not have a
+    specific region associated with it, rather, each of the child entries has an implicit
+    set of region codes, and it is that set used to index the entry map.  Each of the
+    child nodes then is within the routing group, indexed by the entry's region code set.
+    """
     # entries: Map of RegionCodes -> GeoEntry
     def __init__(self,entries):
         super(GeoNode,self).__init__(policy_style='Geo')
@@ -141,7 +148,16 @@ class GeoNode(RoutingPolicyNode):
 
     @property
     def key(self):
-        return ' '.join([e[k].key for k in self.entries.keys()])
+        """Form a 'key' as a space separate list of all the region codes, which is different
+        from the comma separated list that appears in the deserialization.  this actually
+        looks more like the space separated list of the potentially comma separated elements,
+        some of which may also contain spaces.  It will be unique, but not suitable for a
+        path element.
+        
+        also - why e[region_code].key instead of iterating over values?
+        """
+        return ' '.join([e[region_code].key for region_code in self.entries.keys()])
+
 
     def __hash__(self):
         return self.key.__hash__()
@@ -217,6 +233,9 @@ class WeightedEntry(RoutingPolicyEntry):
     @property
     def key(self):
         return '%s %s %s %s'%(self.index,self.weight,self.cname,self.child.key)
+
+    def __hash__(self):
+        return self.key.__hash__()
 
     def __eq__(self,other):
         return (isinstance(other,WeightedEntry) and
@@ -377,6 +396,7 @@ class RecordNode(RoutingPolicyNode):
     def find_all_records(self,result):
         result.add(self.record)
 
+
 class ResolutionTree:
 
     def __init__(self,root):
@@ -391,11 +411,11 @@ class ResolutionTree:
     def from_json(root_data):
 
         class ParsedMember:
-
+            """ this is a named tuple, it is a passive data container, for processing during deserialization """
             def __init__(self,info,cname,node):
-                self.info = info
-                self.cname = cname
-                self.node = node
+                self.info = info   # this is either the weight, or the geo-region code
+                self.cname = cname # this is the implicit cname which is used to name this data
+                self.node = node   # this gets filled in
 
         def recurse(data):
             kind = data.get('kind')
@@ -427,7 +447,9 @@ class ResolutionTree:
         else:
             return ResolutionTree(None)
 
+    
     def to_json(self):
+        """Returns a dictionary suitable for rendering by json.dumps()"""
         if self.root != None:
             return self.root.to_json()
         else:
