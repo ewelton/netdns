@@ -51,17 +51,16 @@ class RecordPool(object):
             rec.changeSource(source) for rec in self.records])
             
     def __repr__(self):
-        return json.dumps(self.__dict__,indent=4,sort_keys=True)
+        return json.dumps(self.to_json(),indent=4,sort_keys=True)
 
-    @property
-    def __dict__(self):
+    def to_json(self):
         """Return a jsonifiable dictionary of this pool
         """
         result={}
         for (source,tmap) in self._sourcemap.items():
             result[source]={}
             for (t,rset) in tmap.items():
-                result[source][t]=rset.__dict__
+                result[source][t]=rset.to_json()
             
         return result
     
@@ -390,7 +389,7 @@ class RecordPool(object):
                         if rset.has_present_records:
                             _list=overpresent.setdefault(source,[])
                             for rec in rset.present_records:
-                                _list.append(rec.withoutSource.__dict__)
+                                _list.append(rec.withoutSource.to_json())
             else:
                 # first, take all the records present in master and make
                 # sure they are everywhere they need to be
@@ -401,7 +400,7 @@ class RecordPool(object):
                         if otherset==None:
                             #print("DISCOVERED MISSING - A:",other,mrec.json)
                             _list=missing.setdefault(other,[])
-                            _list.append(mrec.changeSource(other).__dict__)
+                            _list.append(mrec.changeSource(other).to_json())
                         else:
                             # here we have records of this type associated with
                             # the source, and we have a master record
@@ -410,7 +409,7 @@ class RecordPool(object):
                             if orec==None or orec.is_absent:
                                 #print("DISCOVERED MISSING - B:",other,mrec.json)
                                 _list=missing.setdefault(other,[])
-                                _list.append(mrec.changeSource(other).__dict__)
+                                _list.append(mrec.changeSource(other).to_json())
                 for mrec in master.absent_records:
                     for (other,otherset) in othermap.get(t,{}).items():
                         orec=otherset.find(mrec,
@@ -418,7 +417,7 @@ class RecordPool(object):
                         if orec!=None and orec.is_present:
                             #print("DISCOVERED OVERPRESENCE - A:",other,orec.json)
                             _list=overpresent.setdefault(other,[])
-                            _list.append(orec.__dict__)
+                            _list.append(orec.to_json())
 
             if omap!=None and master!=None:
                 # now scan the other's records and deal with the ones
@@ -428,7 +427,7 @@ class RecordPool(object):
                         if master==None or orec not in master:
                             #print("DISCOVERED OVERPRESENCE:",other,orec.json)
                             _list=overpresent.setdefault(other,[])
-                            _list.append(orec.__dict__)
+                            _list.append(orec.to_json())
                         else:
                             pass
                             #print("OREC IN MASTER")

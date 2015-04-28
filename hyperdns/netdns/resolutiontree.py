@@ -160,13 +160,12 @@ class GeoNode(RoutingPolicyNode):
         for e in self.entries.values():
             e.child.find_all_records(result)
 
-    @property
-    def __dict__(self):
+    def to_json(self):
         result = { 'kind': 'Geo',
                    'members': [] }
         for key in sorted(self.entries.keys()):
             entry = self.entries[key]
-            member = entry.child.__dict__
+            member = entry.child.to_json()
             member['info'] = str(key)
             if entry.cname != None:
                 member['cname'] = entry.cname.rdata
@@ -269,12 +268,11 @@ class WeightedNode(RoutingPolicyNode):
                               suffix=csuffix,
                               file=file)
 
-    @property
-    def __dict__(self):
+    def to_json(self):
         result = { 'kind': 'Weighted',
                    'members': [] }
         for entry in self.entries:
-            member = entry.child.__dict__
+            member = entry.child.to_json()
             member['info'] = int(100*entry.weight)
             if entry.cname != None:
                 member['cname'] = entry.cname.rdata
@@ -320,10 +318,9 @@ class RecordSetNode(RoutingPolicyNode):
         for e in self.entries:
             e.print(indent+'    ',file=file)
 
-    @property
-    def __dict__(self):
+    def to_json(self):
         return { 'kind': 'RecordSet',
-                 'members': [e.__dict__ for e in self.entries] }
+                 'members': [e.to_json() for e in self.entries] }
 
     def find_referenced_cnames(self,result):
         pass
@@ -370,10 +367,9 @@ class RecordNode(RoutingPolicyNode):
     def print(self,indent='',prefix='',suffix='',file=sys.stdout):
         print('%s%sRecord %s%s'%(indent,prefix,self,suffix),file=file)
 
-    @property
-    def __dict__(self):
+    def to_json(self):
         return { 'kind': 'Record',
-                 'value': self.record.__dict__ }
+                 'value': self.record.to_json() }
 
     def find_referenced_cnames(self,result):
         pass
@@ -431,10 +427,9 @@ class ResolutionTree:
         else:
             return ResolutionTree(None)
 
-    @property
-    def __dict__(self):
+    def to_json(self):
         if self.root != None:
-            return self.root.__dict__
+            return self.root.to_json()
         else:
             return None
 

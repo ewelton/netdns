@@ -76,22 +76,21 @@ class ResourceData(object):
         """Read only access to fqdn of this resource"""
         return "%s.%s" % (self.name,self.zone.fqdn)
 
-    @property
-    def __dict__(self):
+    def to_json(self):
         result = {
             'name': self._localname,
         }
         records = []
         if self.rtree != None:
-            result['rtree'] = self.rtree.__dict__
+            result['rtree'] = self.rtree.to_json()
             for rec in self._recpool.records:
                 if rec.rdtype not in [RecordType.CNAME,RecordType.A,RecordType.AAAA]:
-                    records.append(rec.__dict__)
+                    records.append(rec.to_json())
             if len(records) > 0:
                 result['records'] = records
         else:
             for rec in sorted(self._recpool.records):
-                records.append(rec.__dict__)
+                records.append(rec.to_json())
             result['records'] = records
         return result
         
@@ -561,14 +560,13 @@ class ZoneData(object):
         for r in sorted(roots):
             yield self._resources[r]
     
-    @property
-    def __dict__(self):
+    def to_json(self):
         """
         Return the zone data as a dict tree ready for json serialization.
         """
         resources = []
         for res in self._root_resources:
-            resources.append(res.__dict__)
+            resources.append(res.to_json())
         return {
             'fqdn': self._fqdn,
             'resources': resources,

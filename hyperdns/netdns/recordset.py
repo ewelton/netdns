@@ -125,10 +125,9 @@ class RecordSet(set):
     def _as_array(self):
         """return the records in this set as a simple array
         """
-        return [x.__dict__ for x in self]
+        return [x.to_json() for x in self]
 
-    @property
-    def __dict__(self):
+    def to_json(self):
         """
         Return this pool as JSON serializable dict
         """
@@ -301,5 +300,3 @@ class RecordSet(set):
         for r in list(self):
             if r.presence!=presence:
                 self.discard(r)
-                
-            

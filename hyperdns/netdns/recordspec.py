@@ -465,8 +465,7 @@ class RecordSpec(object):
         """
         return self._rdclass
             
-    @property
-    def __dict__(self):
+    def to_json(self):
         """
         Returns a JSON serializable dict representation of the data in this
         record.
@@ -614,7 +613,7 @@ class RecordSpec(object):
 
     def __repr__(self):
         """Return json representation as text"""
-        return json.dumps(self.__dict__,sort_keys=True)
+        return json.dumps(self.to_json(),sort_keys=True)
     
     def get(self,key,default=None):
         """Synonym for __getitem__, accepts the default keyword, however

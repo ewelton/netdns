@@ -43,9 +43,9 @@ class TestCase(unittest.TestCase):
             RecordSpec.cname_record('one.host.name.',source="A"),
             RecordSpec.cname_record('one.host.name.',source="B")
             ])
-        data=pool.__dict__
+        data=pool.to_json()
         pool2=pool.from_dict(data)
-        assert pool.__dict__==pool2.__dict__
+        assert pool.to_json()==pool2.to_json()
         
         
         

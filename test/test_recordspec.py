@@ -24,7 +24,7 @@ class TestCase(unittest.TestCase):
             'type':'A',
             'class':'IN'
         })
-        assert r.__dict__==self.rec1
+        assert r.to_json()==self.rec1
         old=r
         
         r=RecordSpec(json={
@@ -37,7 +37,7 @@ class TestCase(unittest.TestCase):
         #print(r.key)
         assert r.key=='{1.2.3.4}{3}{A}{IN}'
         #assert str_r=='{"class": "IN", "rdata": "1.2.3.4", "ttl": 3, "type": "A"}'        
-        assert r.__dict__==self.rec1        
+        assert r.to_json()==self.rec1
         assert r==self.rec1
         assert r==old
         assert r.ttl==3
