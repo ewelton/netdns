@@ -2,12 +2,37 @@ from .recordtype import RecordType
 from .recordspec import RecordSpec
 from .recordclass import RecordClass
 import sys
+import abc
 
 class RoutingPolicyEntry:
-
+    """A RoutingPolicyEntry represents a specific decision within the parent
+    routing policy node.
+    """
     def __init__(self):
-        pass
-
+        self._supporting_info={}
+        
+    """
+    Each node has a local path element, that is used to generate a flattened representation
+    of the record set, mapped out by routing policy
+    """
+    @property
+    def path_elt(self):
+        return 'elt-%s' % self.key
+        
+    @property
+    def supporting_info(self):
+        return self._supporting_info
+     
+    @abc.abstractmethod
+    def key(self):
+        """The entry key is used to index the node's entry map.  It varies depending upon
+        the 
+        """
+        
+    def __hash__(self):
+        """All entries are hashable by key"""
+        return self.key.__hash__()
+        
 class RoutingPolicyNode:
 
     @property
@@ -64,9 +89,6 @@ class GeoEntry(RoutingPolicyEntry):
     @property
     def key(self):
         return '%s %s'%(self.cname,self.child.key)
-
-    def __hash__(self):
-        return self.key.__hash__()
 
     def __eq__(self,other):
         return (isinstance(other,GeoEntry) and
@@ -164,9 +186,6 @@ class WeightedEntry(RoutingPolicyEntry):
     @property
     def key(self):
         return '%s %s %s %s'%(self.index,self.weight,self.cname,self.child.key)
-
-    def __hash__(self):
-        return self.key.__hash__()
 
     def __eq__(self,other):
         return (isinstance(other,WeightedEntry) and
