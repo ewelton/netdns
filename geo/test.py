@@ -75,21 +75,45 @@ def value_map_str(value_map):
         lines.append('%s %s'%(rname1,', '.join(sorted(values))))
     return '\n'.join(lines)
 
+def to_lines(s):
+    lines = s.split('\n')
+    while len(lines) > 0 and len(lines[-1]) == 0:
+        lines = lines[:-1]
+    return lines
+
+def from_lines(lines):
+    return '\n'.join(lines)
+
+def hjoin(strings):
+    lines_list = [to_lines(str(s)) for s in strings]
+    height = max(len(lines) for lines in lines_list)
+    width = sum(max(len(l) for l in lines) for lines in lines_list)
+    result = ['' for _ in range(0,height)]
+    for lines in lines_list:
+        sheight = len(lines)
+        swidth = max(len(l) for l in lines)
+        for r in range(0,sheight):
+            result[r] = result[r] + lines[r] + (' '*(swidth-len(lines[r])))
+        for r in range(sheight,height):
+            result[r] = result[r] + ' '*swidth
+    return from_lines(result)
+
 def test_grid():
     scheme1 = scheme_from_lines([
         'abbx',
         'cddx',
         'cddx'])
-    print(grid_from_scheme(scheme1).render())
-    print(scheme1)
+    grid1 = grid_from_scheme(scheme1).render()
+    print(hjoin([grid1,'    ','\n'+str(scheme1)]))
 
     print()
     scheme2 = scheme_from_lines([
         'eefy',
         'gghy',
         'gghy'])
-    print(grid_from_scheme(scheme2).render())
-    print(scheme2)
+    grid2 = grid_from_scheme(scheme2).render()
+    print(hjoin([grid2,'    ','\n'+str(scheme2)]))
+    print()
 
     print('-----------------------------')
     m1 = scheme1.map(scheme2)
