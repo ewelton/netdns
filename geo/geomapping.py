@@ -145,11 +145,11 @@ class DistributionScheme:
         Example:
 
             ┌───┬───────────┐             ┌───────────┬───┐
-            │ a │     b     │             │     1     │ 2 │     { 'a': {'1'}
-            ├───┴───┬───────┤             ├───────────┼───┤       'b': {'1','2'}
-            │   c   │   d   │ .translate( │     3     │ 3 │ ) =   'c': {'3'}
-            ├───────┴───────┤             ├───────────┴───┤       'd': {'3'}
-            │       x       │             │       4       │       'x': {'4'} }
+            │ a │     b     │             │     1     │ 2 │    { 'a': {'1': 1.0 },
+            ├───┴───┬───────┤             ├───────────┼───┤      'b': {'1': 0.66, '2': 0.33 },
+            │   c   │   d   │ .translate( │     3     │ 3 │ ) =  'c': {'3': 1.0 },
+            ├───────┴───────┤             ├───────────┴───┤      'd': {'3': 1.0 },
+            │       x       │             │       4       │      'x': {'4': 1.0 } }
             └───────────────┘             └───────────────┘
         """
         assert isinstance(other_scheme,DistributionScheme)
@@ -159,10 +159,13 @@ class DistributionScheme:
 
         region_map = self.map(other_scheme)
 
-        value_map = defaultdict(frozenset)
-        for (rname1,v) in region_map.items():
-            for rname2 in v:
-                value_map[rname1] |= {other_values[rname2]}
+        value_map = {}
+        for (dst_name,entries) in region_map.items():
+            value_map.setdefault(dst_name,dict())
+            for (src_name,src_fraction) in entries.items():
+                val = other_values[src_name]
+                value_map[dst_name].setdefault(val,0)
+                value_map[dst_name][val] += src_fraction
 
         return value_map
 

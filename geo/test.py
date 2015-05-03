@@ -75,8 +75,12 @@ def scheme_map_str(mapping):
 def value_map_str(value_map):
     lines = []
     for rname1 in sorted(value_map.keys()):
-        values = value_map[rname1]
-        lines.append('%s %s'%(rname1,', '.join(sorted(values))))
+        rname2_dict = value_map[rname1]
+        parts = []
+        for rname2 in sorted(rname2_dict.keys()):
+            proportion = rname2_dict[rname2]
+            parts.append('%d%% %s'%(100*proportion,rname2))
+        lines.append('%s: %s'%(rname1,', '.join(parts)))
     return '\n'.join(lines)
 
 def to_lines(s):
