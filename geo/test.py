@@ -64,8 +64,12 @@ def intersections_str(groups2):
 def scheme_map_str(mapping):
     lines = []
     for rname1 in sorted(mapping.keys()):
-        rname2_set = mapping[rname1]
-        lines.append('%s: %s'%(rname1,','.join(sorted(rname2_set))))
+        rname2_dict = mapping[rname1]
+        parts = []
+        for rname2 in sorted(rname2_dict.keys()):
+            proportion = rname2_dict[rname2]
+            parts.append('%d%% %s'%(100*proportion,rname2))
+        lines.append('%s: %s'%(rname1,', '.join(parts)))
     return '\n'.join(lines)
 
 def value_map_str(value_map):
