@@ -1,5 +1,8 @@
 from collections import defaultdict
 
+def code_weight(code):
+    return 1
+
 class Region:
     """A set of region codes (strings).
 
@@ -108,12 +111,27 @@ class DistributionScheme:
             for code in region.codes:
                 other_names_by_code[code] = name
 
-        mapping = defaultdict(frozenset)
+        mapping = defaultdict(lambda: defaultdict(int))
         for (name,region) in self.regions.items():
             for code in region.codes:
-                mapping[name] |= {other_names_by_code[code]}
+                other_name = other_names_by_code[code]
+                mapping[name][other_name] += code_weight(code)
 
-        return mapping
+        result = defaultdict(dict)
+        for (name,region) in self.regions.items():
+
+            # Calculate the total weight for this region
+            total_weight = sum(code_weight(code) for code in region.codes)
+
+            # For each other region that this one overlaps, work out the ratio of the
+            # overlapping part's weight to the total weight of this region
+            for (other_name,mapping_weight) in mapping[name].items():
+                if total_weight == 0:
+                    result[name][other_name] = 1
+                else:
+                    result[name][other_name] = mapping_weight/total_weight
+
+        return result
 
     def translate(self,other_scheme,other_values):
         """Given an assignment of values to regions of another distribution scheme, determine
