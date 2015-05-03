@@ -100,17 +100,17 @@ def hjoin(strings):
 
 def test_grid():
     scheme1 = scheme_from_lines([
-        'abbx',
-        'cddx',
-        'cddx'])
+        'abbbx',
+        'ccddx',
+        'ccddx'])
     grid1 = grid_from_scheme(scheme1).render()
     print(hjoin([grid1,'    ','\n'+str(scheme1)]))
 
     print()
     scheme2 = scheme_from_lines([
-        'eefy',
-        'gghy',
-        'gghy'])
+        'eeefy',
+        'ggghy',
+        'ggghy'])
     grid2 = grid_from_scheme(scheme2).render()
     print(hjoin([grid2,'    ','\n'+str(scheme2)]))
     print()
