@@ -5,6 +5,8 @@ from collections import defaultdict
 from textwrap import indent
 import re
 from geomapping import Region, DistributionScheme
+from pprint import pformat
+import json
 
 def grid_from_scheme(scheme):
     assert isinstance(scheme,DistributionScheme)
@@ -139,7 +141,6 @@ def test_grid():
                  '      ',
                  'ds2.map(ds1)\n\n'+scheme_map_str(m21)
                  ]))
-    # print(intersections_str(partition))
 
     values2 = { 'e': { '1': 0.5, '2': 0.5 },
                 'g': { '1': 0.5, '2': 0.5 },
@@ -155,7 +156,18 @@ def test_grid():
     print()
     print('ds1.translate(ds2,values2)')
     print()
-    print(value_map_str(value_map))
+
+    display_map = {}
+    for (name,value_dict) in value_map.items():
+        parts = []
+        for value in sorted(value_dict.keys()):
+            weight = value_dict[value]
+            parts.append('%d%% %s'%(100*weight,value))
+        display_map[name] = '\n'.join(parts)
+
+    print(hjoin([value_map_str(value_map),
+                 '        ',
+                 grid_from_scheme(ds1).render(4,8,display_map)]))
 
 def test_display():
     lines = ['abbbx',
@@ -167,6 +179,6 @@ def test_display():
                 'c': '50% 5\n50% 6',
                 'd': '50% 7\n50% 8',
                 'x': '50% 9\n50% 10' }
-    print(grid.render(8,16,content))
+    print(grid.render(5,12,content))
 
 test_grid()
