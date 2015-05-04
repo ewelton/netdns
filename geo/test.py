@@ -107,35 +107,54 @@ def hjoin(strings):
     return from_lines(result)
 
 def test_grid():
-    scheme1 = scheme_from_lines([
+    ds1 = scheme_from_lines([
         'abbbx',
         'ccddx',
         'ccddx'])
-    grid1 = grid_from_scheme(scheme1).render()
-    print(hjoin([grid1,'    ','\n'+str(scheme1)]))
+    grid1 = grid_from_scheme(ds1).render()
+    print(hjoin(['\n\n\n        ds1 = ',
+                 grid1,
+                 '      ',
+                 '\n'+str(ds1)]))
 
     print()
-    scheme2 = scheme_from_lines([
+    ds2 = scheme_from_lines([
         'eeefy',
         'ggghy',
         'ggghy'])
-    grid2 = grid_from_scheme(scheme2).render()
-    print(hjoin([grid2,'    ','\n'+str(scheme2)]))
+    grid2 = grid_from_scheme(ds2).render()
+    print(hjoin(['\n\n\n        ds2 = ',
+                 grid2,
+                 '      ',
+                 '\n'+str(ds2)]))
     print()
 
-    print('-----------------------------')
-    m1 = scheme1.map(scheme2)
-    print(indent(scheme_map_str(m1),'    '))
-    print('-----------------------------')
-    m2 = scheme2.map(scheme1)
-    print(indent(scheme_map_str(m2),'    '))
-    print()
-    print(intersections_str(DistributionScheme.partition([scheme1,scheme2])))
+    m12 = ds1.map(ds2)
+    m21 = ds2.map(ds1)
+    partition = DistributionScheme.partition([ds1,ds2])
+    print(hjoin(['\n\npartition\n([ds1,ds2]) = ',
+                 intersections_str(partition),
+                 '      ',
+                 'ds1.map(ds2)\n\n'+scheme_map_str(m12),
+                 '      ',
+                 'ds2.map(ds1)\n\n'+scheme_map_str(m21)
+                 ]))
+    # print(intersections_str(partition))
 
-    s2values = { 'e': '1', 'f': '2', 'y': '4', 'g': '3', 'h': '3' }
-    value_map = scheme1.translate(scheme2,s2values)
+    values2 = { 'e': { '1': 0.5, '2': 0.5 },
+                'g': { '1': 0.5, '2': 0.5 },
+                'f': { '3': 1 },
+                'h': { '4': 1 },
+                'y': { '5': 1 } }
+    print('values2')
     print()
-    print('apply_mapping_to_values')
+    print(value_map_str(values2))
+    print()
+    value_map = ds1.translate(ds2,values2)
+
+    print()
+    print('ds1.translate(ds2,values2)')
+    print()
     print(value_map_str(value_map))
 
 test_grid()

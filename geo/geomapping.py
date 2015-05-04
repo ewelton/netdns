@@ -155,17 +155,27 @@ class DistributionScheme:
         assert isinstance(other_scheme,DistributionScheme)
         assert isinstance(other_values,dict)
         assert all(isinstance(key,str) for key in other_values.keys())
-        assert all(isinstance(value,str) for value in other_values.values())
+        assert all(isinstance(value,dict) for value in other_values.values())
 
         region_map = self.map(other_scheme)
 
         value_map = {}
-        for (dst_name,entries) in region_map.items():
+        for dst_name in sorted(region_map.keys()):
+            # print('dst %s'%(dst_name))
             value_map.setdefault(dst_name,dict())
-            for (src_name,src_fraction) in entries.items():
-                val = other_values[src_name]
-                value_map[dst_name].setdefault(val,0)
-                value_map[dst_name][val] += src_fraction
+
+            entries = region_map[dst_name]
+            for src_name in sorted(entries.keys()):
+                src_fraction = entries[src_name]
+                # print('    src %s %d%%'%(src_name,100*src_fraction))
+
+                value_dict = other_values[src_name]
+                for value in sorted(value_dict.keys()):
+                    value_fraction = value_dict[value]
+                    # print('        value %s %d%% %d%%'%(
+                    #     value,100*value_fraction,100*src_fraction*value_fraction))
+                    value_map[dst_name].setdefault(value,0)
+                    value_map[dst_name][value] += src_fraction*value_fraction
 
         return value_map
 
