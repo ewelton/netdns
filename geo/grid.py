@@ -80,40 +80,8 @@ class Grid:
                     labels.add(l)
         return frozenset(labels)
 
-    def _find_centers(self,row_size,col_size,labels):
-        rmin = {}
-        rmax = {}
-        cmin = {}
-        cmax = {}
-
-        for row in range(0,self.height):
-            for col in range(0,self.width):
-                l = self.data[row][col]
-                if l == ' ':
-                    continue
-                drow = row_size*row + 1
-                dcol = col_size*col + 1
-                rmin.setdefault(l,drow)
-                rmax.setdefault(l,drow)
-                cmin.setdefault(l,dcol)
-                cmax.setdefault(l,dcol)
-                rmin[l] = min(rmin[l],drow)
-                rmax[l] = max(rmax[l],drow+row_size-2)
-                cmin[l] = min(cmin[l],dcol)
-                cmax[l] = max(cmax[l],dcol+col_size-2)
-
-        rcenter = {}
-        ccenter = {}
-        for l in labels:
-            rcenter[l] = (rmin[l] + rmax[l])/2
-            ccenter[l] = (cmin[l] + cmax[l])/2
-
-        return (rcenter,ccenter)
-
     def _draw_labels(self,row_size,col_size,chars,content):
         all_labels = self._find_labels()
-
-        (rcenter,ccenter) = self._find_centers(row_size,col_size,all_labels)
 
         def find_first_occurrence(label):
             for r in range(0,self.height):
@@ -122,102 +90,51 @@ class Grid:
                         return (r,c)
             return None
 
-        def find_closest():
-
-            def distance(l,row,col):
-                dr = abs(row - rcenter[l])
-                dc = abs(col - ccenter[l])
-                return sqrt(dr*dr + dc*dc)
-
-            def maybe_add(l,drow,dcol):
-                d = distance(l,drow,dcol)
-                clo = theclosest.get(l)
-                if clo == None or clo[0] > d:
-                    theclosest[l] = (d,drow,dcol)
-
-            theclosest = {}
-
-            for row in range(0,self.height):
-                for col in range(0,self.width):
-                    l = self.data[row][col]
-                    if l == ' ':
-                        continue
-
-                    drow = row*row_size + 1
-                    dcol = col*col_size + 1
-
-                    maybe_add(l,drow,dcol)
-
-                    for r in range(drow,drow+row_size-1):
-                        for c in range(dcol,dcol+col_size-1):
-                            maybe_add(l,r,c)
-
-                    if self.get_cell(row+1,col,'OUT') == l:
-                        r = drow+row_size-1
-                        for c in range(dcol,dcol+col_size-1):
-                            maybe_add(l,r,c)
-
-                    if self.get_cell(row,col+1,'OUT') == l:
-                        c = dcol+col_size-1
-                        for r in range(drow,drow+row_size-1):
-                            maybe_add(l,r,c)
-
-                    if (self.get_cell(row+1,col,'OUT') == l and
-                        self.get_cell(row,col+1,'OUT') == l and
-                        self.get_cell(row+1,col+1,'OUT') == l):
-                        r = drow+row_size-1
-                        c = dcol+col_size-1
-                        maybe_add(l,r,c)
-            return theclosest
-
-        closest = find_closest()
-
         for label in sorted(all_labels):
-            if content.get(label) == None:
-                clo = closest[label]
-                drow = clo[1]
-                dcol = clo[2]
-                chars[drow][dcol] = label
-            else:
-                text = content[label]
-                location = find_first_occurrence(label)
-                if location == None:
-                    continue
-                (row1,col1) = location
-                row2 = row1
-                col2 = col1
-                while col2+1 < self.width and self.data[row2][col2+1] == label:
-                    col2 += 1
-                while row2+1 < self.height:
-                    if all(self.data[row2+1][c] == label for c in range(col1,col2+1)):
-                        row2 += 1
-                    else:
-                        break
+            text = content.get(label,label)
 
-                drow1 = row1*row_size+1
-                dcol1 = col1*col_size+1
+            location = find_first_occurrence(label)
+            if location == None:
+                continue
+            (row1,col1) = location
+            row2 = row1
+            col2 = col1
+            while col2+1 < self.width and self.data[row2][col2+1] == label:
+                col2 += 1
+            while row2+1 < self.height:
+                if all(self.data[row2+1][c] == label for c in range(col1,col2+1)):
+                    row2 += 1
+                else:
+                    break
 
-                drow2 = (row2+1)*row_size
-                dcol2 = (col2+1)*col_size
+            drow1 = row1*row_size+1
+            dcol1 = col1*col_size+1
 
-                lines = text.split('\n')
-                while len(lines) > 0 and lines[-1] == '':
-                    lines = lines[:-1]
-                text_height = len(lines)
-                text_width = max(len(line) for line in lines)
+            drow2 = (row2+1)*row_size
+            dcol2 = (col2+1)*col_size
 
-                area_height = drow2 - drow1
-                area_width = dcol2 - dcol1
+            lines = text.split('\n')
+            while len(lines) > 0 and lines[-1] == '':
+                lines = lines[:-1]
+            text_height = len(lines)
+            text_width = max(len(line) for line in lines)
 
-                start_row = max(drow1,int((drow1 + drow2)/2 - text_height/2))
-                start_col = max(dcol1,int((dcol1 + dcol2)/2 - text_width/2))
+            area_height = drow2 - drow1
+            area_width = dcol2 - dcol1
 
-                for tr in range(0,text_height):
-                    for tc in range(0,text_width):
-                        if (start_row+tr < len(chars) and
-                            start_col+tc < len(chars[0]) and
-                            tc < len(lines[tr])):
-                            chars[start_row+tr][start_col+tc] = lines[tr][tc]
+            start_row = max(drow1,int((drow1 + drow2)/2 - text_height/2))
+            start_col = max(dcol1,int((dcol1 + dcol2)/2 - text_width/2))
+
+            # for dr in range(drow1,drow2):
+            #     for dc in range(dcol1,dcol2):
+            #         chars[dr][dc] = '.'
+
+            for tr in range(0,text_height):
+                for tc in range(0,text_width):
+                    if (start_row+tr < len(chars) and
+                        start_col+tc < len(chars[0]) and
+                        tc < len(lines[tr])):
+                        chars[start_row+tr][start_col+tc] = lines[tr][tc]
 
     def render(self,row_size=2,col_size=4,content=None):
 
@@ -233,9 +150,6 @@ class Grid:
         for row in range(0,row_size*self.height+1):
             lines.append(''.join(chars[row]))
         return '\n'.join(lines)
-
-    def print(self,row_size=2,col_size=4):
-        print(self.render(row_size,col_size))
 
 def grid_from_lines(lines):
     height = len(lines)
@@ -262,6 +176,8 @@ if __name__ == '__main__':
          "   abbbaaacc ",
          "   abbb  ccc ",
          "    bbb    c "]
+    content = None
+    # content = {'a': '111', 'b': '222', 'c': '333'}
 
     g = grid_from_lines(l)
-    g.print(2,4)
+    print(g.render(2,4,content))
