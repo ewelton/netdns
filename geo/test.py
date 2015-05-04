@@ -157,4 +157,16 @@ def test_grid():
     print()
     print(value_map_str(value_map))
 
+def test_display():
+    lines = ['abbbx',
+             'ccddx',
+             'ccddx']
+    grid = grid_from_lines(lines)
+    content = { 'a': '50% 1\n50% 2',
+                'b': '50% 3\n50% 4',
+                'c': '50% 5\n50% 6',
+                'd': '50% 7\n50% 8',
+                'x': '50% 9\n50% 10' }
+    print(grid.render(8,16,content))
+
 test_grid()
