@@ -161,19 +161,15 @@ class DistributionScheme:
 
         value_map = {}
         for dst_name in sorted(region_map.keys()):
-            # print('dst %s'%(dst_name))
             value_map.setdefault(dst_name,dict())
 
             entries = region_map[dst_name]
             for src_name in sorted(entries.keys()):
                 src_fraction = entries[src_name]
-                # print('    src %s %d%%'%(src_name,100*src_fraction))
 
                 value_dict = other_values[src_name]
                 for value in sorted(value_dict.keys()):
                     value_fraction = value_dict[value]
-                    # print('        value %s %d%% %d%%'%(
-                    #     value,100*value_fraction,100*src_fraction*value_fraction))
                     value_map[dst_name].setdefault(value,0)
                     value_map[dst_name][value] += src_fraction*value_fraction
 
