@@ -29,12 +29,6 @@ version=version.strip()
 github = 'http://hyperdns.github.io/netdns'
 
 from distutils.core import setup
-from pip.req import parse_requirements
-
-# parse_requirements() returns generator of
-# pip.req.InstallRequirement objects
-install_reqs = parse_requirements(purepath("requirements.txt"))
-test_reqs = parse_requirements(purepath("dev-requirements.txt"))
 
 # from: https://coderwall.com/p/qawuyq
 # allows use of Markdown on GitHub and RST on PyPI
@@ -67,8 +61,8 @@ kwargs = {
     'author_email' : 'eric@hyperdns.com',
     'license' : 'Apache2',
     'url' : github,
-    'install_requires':[str(ir.req) for ir in install_reqs],
-    'tests_require':[str(ir.req) for ir in test_reqs],
+    'install_requires':[],
+    'tests_require':[],
     'classifiers' : [
         "Programming Language :: Python",
         "Topic :: Internet :: Name Service (DNS)",
