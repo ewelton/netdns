@@ -177,7 +177,7 @@ class GeoNode(RoutingPolicyNode):
             e.child.find_all_records(result)
 
     def to_json(self):
-        result = { 'kind': 'Geo',
+        result = { 'kind': self.policy_style,
                    'members': [] }
         for key in sorted(self.entries.keys()):
             entry = self.entries[key]
@@ -288,7 +288,7 @@ class WeightedNode(RoutingPolicyNode):
                               file=file)
 
     def to_json(self):
-        result = { 'kind': 'Weighted',
+        result = { 'kind': self.policy_style,
                    'members': [] }
         for entry in self.entries:
             member = entry.child.to_json()
@@ -338,7 +338,7 @@ class RecordGroupNode(RoutingPolicyNode):
             e.print(indent+'    ',file=file)
 
     def to_json(self):
-        return { 'kind': 'RecordSet',
+        return { 'kind': self.policy_style,
                  'members': [e.to_json() for e in self.entries] }
 
     def find_referenced_cnames(self,result):
@@ -387,7 +387,7 @@ class RecordNode(RoutingPolicyNode):
         print('%s%sRecord %s%s'%(indent,prefix,self,suffix),file=file)
 
     def to_json(self):
-        return { 'kind': 'Record',
+        return { 'kind': self.policy_style,
                  'value': self.record.to_json() }
 
     def find_referenced_cnames(self,result):
