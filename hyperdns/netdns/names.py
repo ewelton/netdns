@@ -119,21 +119,21 @@ def splitFqdnInZone(fqdn,zone):
 
     return RnameZone(rname,zone)
 
-def isIPAddress(address):
+def is_ip_address(address):
     try:
         ipaddress.ip_address(address)
         return True
     except ValueError as E:
         return False
 
-def isIPv4Address(address):
+def is_ipv4_address(address):
     try:
         ip = ipaddress.ip_address(address)
         return isinstance(ip,ipaddress.IPv4Address)
     except ValueError as E:
         return False
 
-def isIPv6Address(address):
+def is_ipv6_address(address):
     try:
         ip = ipaddress.ip_address(address)
         return isinstance(ip,ipaddress.IPv6Address)

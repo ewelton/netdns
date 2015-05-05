@@ -82,9 +82,9 @@ from .names import (
     joinRnameZone,
     splitFqdn,
     splitFqdnInZone,
-    isIPAddress,
-    isIPv4Address,
-    isIPv6Address
+    is_ip_address,
+    is_ipv4_address,
+    is_ipv6_address
     )
 from .recordspec import (
     RecordSpec,
