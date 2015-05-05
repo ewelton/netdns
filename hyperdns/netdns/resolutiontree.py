@@ -309,10 +309,10 @@ class WeightedNode(RoutingPolicyNode):
         for e in self.entries:
             e.child.find_all_records(result)
 
-class RecordSetNode(RoutingPolicyNode):
+class RecordGroupNode(RoutingPolicyNode):
 
     def __init__(self,entries):
-        super(RecordSetNode,self).__init__(policy_style='RecordSet')
+        super(RecordGroupNode,self).__init__(policy_style='RecordSet')
         
         assert all([isinstance(e,RecordNode) for e in entries])
         self._entries = entries
@@ -329,7 +329,7 @@ class RecordSetNode(RoutingPolicyNode):
         return self.key.__hash__()
 
     def __eq__(self,other):
-        return (isinstance(other,RecordSetNode) and
+        return (isinstance(other,RecordGroupNode) and
                 other.entries == self.entries)
 
     def print(self,indent='',prefix='',suffix='',file=sys.stdout):
@@ -434,7 +434,7 @@ class ResolutionTree:
                 node = WeightedNode([ WeightedEntry(pm.info,pm.cname,pm.node)
                                       for pm in [recurse(m) for m in members] ])
             elif kind == 'RecordSet':
-                node = RecordSetNode([ pm.node for pm in [recurse(m) for m in members ]])
+                node = RecordGroupNode([ pm.node for pm in [recurse(m) for m in members ]])
             elif kind == 'Record':
                 spec = RecordSpec(json=data['value'])
                 node = RecordNode(spec)

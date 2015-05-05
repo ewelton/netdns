@@ -21,9 +21,9 @@ def rtree_delta(tree1,tree2):
                 changed('%sAdd Weighted node'%(indent))
                 gen_delta(WeightedNode([]),node2,indent)
                 return
-            elif isinstance(node2,RecordSetNode):
+            elif isinstance(node2,RecordGroupNode):
                 changed('%sAdd Record Set'%(indent))
-                gen_delta(RecordSetNode([]),node2,indent)
+                gen_delta(RecordGroupNode([]),node2,indent)
                 return
             elif isinstance(node2,RecordNode):
                 gen_delta_records(None,node2,indent)
@@ -40,8 +40,8 @@ def rtree_delta(tree1,tree2):
                 gen_delta(node1,WeightedNode([]),indent)
                 changed('%sDel Weighted node'%(indent))
                 return
-            elif isinstance(node1,RecordSetNode):
-                gen_delta(node1,RecordSetNode([]),indent)
+            elif isinstance(node1,RecordGroupNode):
+                gen_delta(node1,RecordGroupNode([]),indent)
                 changed('%sDel Record Set'%(indent))
                 return
             elif isinstance(node1,RecordNode):
@@ -149,7 +149,7 @@ def rtree_delta(tree1,tree2):
                 addi += 1
 
             return
-        elif isinstance(node1,RecordSetNode) and isinstance(node2,RecordSetNode):
+        elif isinstance(node1,RecordGroupNode) and isinstance(node2,RecordGroupNode):
             gen_delta_records(node1,node2,indent)
             return
         elif isinstance(node1,RecordNode) and isinstance(node2,RecordNode):
