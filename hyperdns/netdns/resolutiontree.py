@@ -75,7 +75,7 @@ class RoutingPolicyNode:
         the ultimate leaf nodes of the RoutingPolicyTree rooted at this node.
         """
 
-class RegionCodes:
+class Region:
 
     def __init__(self,codes):
         self._codes = frozenset(codes)
@@ -92,11 +92,11 @@ class RegionCodes:
         return self.codes.__hash__()
 
     def __eq__(self,other):
-        return (isinstance(other,RegionCodes) and
+        return (isinstance(other,Region) and
                 self.codes == other.codes)
 
     def __lt__(self,other):
-        if not isinstance(other,RegionCodes):
+        if not isinstance(other,Region):
             return -1
         return self.key < other.key
 
@@ -135,10 +135,10 @@ class GeoNode(RoutingPolicyNode):
     set of region codes, and it is that set used to index the entry map.  Each of the
     child nodes then is within the routing group, indexed by the entry's region code set.
     """
-    # entries: Map of RegionCodes -> GeoEntry
+    # entries: Map of Region -> GeoEntry
     def __init__(self,entries):
         super(GeoNode,self).__init__(policy_style='Geo')
-        assert all([isinstance(key,RegionCodes) for key in entries.keys()])
+        assert all([isinstance(key,Region) for key in entries.keys()])
         assert all([isinstance(value,GeoEntry) for value in entries.values()])
         self._entries = entries
 
@@ -428,7 +428,7 @@ class ResolutionTree:
             else:
                 cname = None
             if kind == 'Geo':
-                node = GeoNode({ RegionCodes(pm.info.split(',')): GeoEntry(pm.cname,pm.node)
+                node = GeoNode({ Region(pm.info.split(',')): GeoEntry(pm.cname,pm.node)
                                  for pm in [recurse(m) for m in members] })
             elif kind == 'Weighted':
                 node = WeightedNode([ WeightedEntry(pm.info,pm.cname,pm.node)
