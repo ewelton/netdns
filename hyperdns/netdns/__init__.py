@@ -100,4 +100,14 @@ from .resolver import NetDNSResolver
 from .model import (
     ResourceData,ZoneData
 )
+from .resolutiontree import (
+    GeoNode,
+    GeoEntry,
+    WeightedNode,
+    WeightedEntry,
+    RecordGroupNode,
+    RecordNode,
+    Region,
+    ResolutionTree
+)
 
