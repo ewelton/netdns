@@ -19,7 +19,7 @@ from .resolutiontree import ResolutionTree
 
 class ResourceData(object):
     
-    def __init__(self,zone,rname,recpool=None):
+    def __init__(self,rname,zone,recpool=None):
         """This represents a resource in a zone.  This resource may or may
         not be a 'root' node, meaning that it is not an implictitly managed
         cname.
@@ -228,7 +228,7 @@ class ZoneData(object):
         
         rd=self._resources.get(self._local_rname(rname))
         if rd==None:
-            rd=ResourceData(self,rname)
+            rd=ResourceData(rname,self)
             self._resources[rname]=rd
         
         if spec_or_set.rdtype==RecordType.NS:
@@ -261,7 +261,7 @@ class ZoneData(object):
         
         rd=self._resources.get(self._local_rname(rname))
         if rd==None:
-            rd=ResourceData(self,rname)
+            rd=ResourceData(rname,self)
             self._resources[rname]=rd
         
         if spec_or_set.rdtype==RecordType.NS:
@@ -300,7 +300,7 @@ class ZoneData(object):
             
         for resource_json in jsondata.get('resources'):
             rname = resource_json['name']
-            rd = ResourceData(zd,rname)
+            rd = ResourceData(rname,zd)
             zd._resources[rname] = rd
 
             records = resource_json.get('records')
