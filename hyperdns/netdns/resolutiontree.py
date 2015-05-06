@@ -76,7 +76,8 @@ class RoutingPolicyNode:
         """
 
 class Region:
-
+    """This is a set of
+    """
     def __init__(self,codes):
         self._codes = frozenset(codes)
 
@@ -103,8 +104,16 @@ class Region:
     def __str__(self):
         return ','.join(sorted(self.codes))
 
-class GeoEntry(RoutingPolicyEntry):
+    def to_json(self):
+        return list(sorted(self._codes))
 
+    @classmethod
+    def from_json(cls,jsondata):
+        return Region(jsondata)
+
+class GeoEntry(RoutingPolicyEntry):
+    """Geo entries map a cname to a name, but there doesn
+    """
     def __init__(self,cname,child):
         super(GeoEntry,self).__init__()
         assert cname == None or isinstance(cname,RecordSpec)
@@ -201,6 +210,8 @@ class GeoNode(RoutingPolicyNode):
                               prefix = 'Region "%s": '%(key),
                               suffix = csuffix,
                               file = file)
+
+
 
 class WeightedEntry(RoutingPolicyEntry):
 
@@ -309,8 +320,15 @@ class WeightedNode(RoutingPolicyNode):
         for e in self.entries:
             e.child.find_all_records(result)
 
-class RecordGroupNode(RoutingPolicyNode):
 
+class RecordGroupNode(RoutingPolicyNode):
+    """A RecordGroupNode contains a set of records, each of which is wrapped in a
+    RecordNode object.  You can create an empty record group node, or you can pass
+    in an array of eitehr RecordNodes or RecordSpecs (or any mixture thereof)
+
+    Note: RecordGroupNodes do not contain RecordSets, it is just a container of records
+    with no protocol verification.
+    """
     def __init__(self,entries):
         super(RecordGroupNode,self).__init__(policy_style = 'RecordSet')
 
@@ -347,6 +365,7 @@ class RecordGroupNode(RoutingPolicyNode):
     def find_all_records(self,result):
         for e in self.entries:
             e.find_all_records(result)
+
 
 class RecordNode(RoutingPolicyNode):
 
@@ -410,6 +429,12 @@ class ResolutionTree:
     @staticmethod
     def from_json(root_data):
 
+        # list comprehensions are very difficult to read and follow for anything that is non
+        # trivial - please try to explain the list comprehensions.  I tend to use loops because
+        # they are easier to understand at a glance....
+        #
+        #
+
         class ParsedMember:
             """ this is a named tuple, it is a passive data container, for processing during deserialization """
             def __init__(self,info,cname,node):
@@ -420,6 +445,7 @@ class ResolutionTree:
         def recurse(data):
             kind = data.get('kind')
             members = data.get('members')
+            child_members = [recurse(m) for m in members] if members is not None else []
             info = data.get('info')
             cname_rdata = data.get('cname')
             cname_ttl = data.get('cname_ttl')
@@ -428,13 +454,16 @@ class ResolutionTree:
             else:
                 cname = None
             if kind == 'Geo':
+                # the 'info' field for a GeoNode is a list, but there are no examples of lists... not clear
+                # what the list is doing here.
+                # so - we split the
                 node = GeoNode({ Region(pm.info.split(',')): GeoEntry(pm.cname,pm.node)
-                                 for pm in [recurse(m) for m in members] })
+                                 for pm in child_members })
             elif kind == 'Weighted':
                 node = WeightedNode([ WeightedEntry(pm.info,pm.cname,pm.node)
-                                      for pm in [recurse(m) for m in members] ])
+                                      for pm in child_members ])
             elif kind == 'RecordSet':
-                node = RecordGroupNode([ pm.node for pm in [recurse(m) for m in members ]])
+                node = RecordGroupNode([ pm.node for pm in child_members])
             elif kind == 'Record':
                 spec = RecordSpec(json = data['value'])
                 node = RecordNode(spec)
@@ -463,6 +492,9 @@ class ResolutionTree:
 
     @property
     def referenced_cnames(self):
+        """Not sure if this returns the implicit names, or any cname that is part of the
+        tree.  I think this is just the implicit cnames - question... where is this used?
+        """
         result = set()
 
         if self.root != None:
