@@ -5,7 +5,7 @@ class NetDNSConfiguration(object):
     updated dynamically, but are best cached locally.
     """
 
-    FALLBACK={
+    FALLBACK = {
         'nameservers':{
             'Level3':['209.244.0.3','209.244.0.4'],
             'Google':['8.8.8.8','8.8.4.4'],
@@ -98,7 +98,7 @@ class NetDNSConfiguration(object):
                 ]
             }
         }
-    ACTIVE=None
+    ACTIVE = None
 
     @classmethod
     def get_default_nameserver(cls):
@@ -109,10 +109,10 @@ class NetDNSConfiguration(object):
         then use the hardcoded values.
         """
         try:
-            data=urlopen(Request(tld_iana_url)).read()
-            ACTIVE['tld']['map']=[]
+            data = urlopen(Request(tld_iana_url)).read()
+            ACTIVE['tld']['map'] = []
             for line in data.split("\n"):
-                line=line.strip()
+                line = line.strip()
                 if not line.startswith("#"):
                     ACTIVE['tld']['map'].append(line)
         except:
@@ -121,7 +121,7 @@ class NetDNSConfiguration(object):
 
     @classmethod
     def initialize(cls):
-        cls.ACTIVE=copy.copy(cls.FALLBACK)
+        cls.ACTIVE = copy.copy(cls.FALLBACK)
 
 
 NetDNSConfiguration.initialize()

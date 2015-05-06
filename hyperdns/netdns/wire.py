@@ -118,14 +118,14 @@ class DNSBuffer(Buffer):
     aaa.bbb.ccc.
     """
 
-    def __init__(self,data=b''):
+    def __init__(self,data = b''):
         """
             Add 'names' dict to cache stored labels
         """
         super(DNSBuffer,self).__init__(data)
         self.names = {}
 
-    def decode_name(self,last=-1):
+    def decode_name(self,last = -1):
         """
             Decode label at current offset in buffer (following pointers
             to cached elements where necessary)
@@ -140,13 +140,13 @@ class DNSBuffer(Buffer):
                 pointer = get_bits(self.unpack("!H")[0],0,14)
                 save = self.offset
                 if last == save:
-                    raise BufferError("Recursive pointer in NodeName [offset=%d,pointer=%d,length=%d]" %
+                    raise BufferError("Recursive pointer in NodeName [offset = %d,pointer = %d,length = %d]" %
                             (self.offset,pointer,len(self.data)))
                 if pointer < self.offset:
                     self.offset = pointer
                 else:
                     # Pointer can't point forwards
-                    raise BufferError("Invalid pointer in NodeName [offset=%d,pointer=%d,length=%d]" %
+                    raise BufferError("Invalid pointer in NodeName [offset = %d,pointer = %d,length = %d]" %
                             (self.offset,pointer,len(self.data)))
                 label.extend(self.decode_name(save).label)
                 self.offset = save

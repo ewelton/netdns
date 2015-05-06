@@ -21,12 +21,12 @@ class NetDNSResolver(object):
             return ip_address(nameserver)
         except ValueError:
             try:
-                resolver=dns.resolver.Resolver()
-                resolver.lifetime=1.0
-                query=resolver.query(nameserver)
+                resolver = dns.resolver.Resolver()
+                resolver.lifetime = 1.0
+                query = resolver.query(nameserver)
                 for answer in query.response.answer:
                     for item in answer.items:
-                        if item.rdtype==1:
+                        if item.rdtype == 1:
                             return ip_address(item.to_text())
             except:
                 pass
@@ -34,59 +34,59 @@ class NetDNSResolver(object):
 
 
     @classmethod
-    def get_nameservers_for_zone(cls,fqdn,nameserver=NetDNSConfiguration.get_default_nameserver()):
-        return cls.query_nameserver(fqdn,nameserver,rtype=RecordType.NS)
+    def get_nameservers_for_zone(cls,fqdn,nameserver = NetDNSConfiguration.get_default_nameserver()):
+        return cls.query_nameserver(fqdn,nameserver,rtype = RecordType.NS)
 
     @classmethod
-    def query_nameserver(cls,host,nameserver,recursive=True,triesRemaining=1,asjson=False,rtype=RecordType.ANY):
+    def query_nameserver(cls,host,nameserver,recursive = True,triesRemaining = 1,asjson = False,rtype = RecordType.ANY):
         """look up a host at a specific nameserver, return all of the result records
         in an array of (type,text) tuples.
         """
 
-        result=[]
+        result = []
         try:
             if not isinstance(nameserver,(IPv4Address,IPv6Address)):
-                nameserver=cls.get_address_for_nameserver(undotify(nameserver))
+                nameserver = cls.get_address_for_nameserver(undotify(nameserver))
         except AddressNotFound as E:
             raise UnknownNameserver("Failed to locate nameserver '%s'" % nameserver)
-        nameserver="%s" % nameserver
+        nameserver = "%s" % nameserver
 
         while triesRemaining>0:
             try:
-                query=dns.message.make_query(host,rtype,RecordClass.IN)
+                query = dns.message.make_query(host,rtype,RecordClass.IN)
                 if not recursive:
                     query.flags &= ~dns.flags.RD
                 #print("Querying %s" % nameserver)
-                response = dns.query.udp(query,nameserver,timeout=1)
+                response = dns.query.udp(query,nameserver,timeout = 1)
                 #print(response)
                 if asjson:
-                    result=cls.format_as_json(response, query.flags, nameserver)
+                    result = cls.format_as_json(response, query.flags, nameserver)
                 else:
                     for answer in response.answer:
                         for item in answer.items:
                             result.append((item.rdtype,item.to_text(),answer.ttl))
-                triesRemaining=0
+                triesRemaining = 0
             except dns.exception.Timeout as e:
-                triesRemaining=triesRemaining-1
+                triesRemaining = triesRemaining-1
             except Exception as e:
                 result.append(('ERROR',e.__class__.__name__))
-                triesRemaining=0
+                triesRemaining = 0
                 raise
         #print nameserver,result
         return result
 
     @classmethod
-    def quick_lookup(cls,host,nameserver=NetDNSConfiguration.get_default_nameserver()):
+    def quick_lookup(cls,host,nameserver = NetDNSConfiguration.get_default_nameserver()):
         return cls.query_nameserver(host,nameserver,
-                recursive=True,triesRemaining=3,asjson=True,
-                rtype=RecordType.ANY)
+                recursive = True,triesRemaining = 3,asjson = True,
+                rtype = RecordType.ANY)
 
     @classmethod
-    def full_report_as_json(cls,host,nameserver=NetDNSConfiguration.get_default_nameserver()):
+    def full_report_as_json(cls,host,nameserver = NetDNSConfiguration.get_default_nameserver()):
         """Perform a lookup of all information about a host at a given nameserver
         """
-        return cls.query_nameserver(host,nameserver,recursive=True,
-                rtype=RecordType.ANY,asjson=True,triesRemaining=5)
+        return cls.query_nameserver(host,nameserver,recursive = True,
+                rtype = RecordType.ANY,asjson = True,triesRemaining = 5)
 
 
     @classmethod
@@ -196,7 +196,7 @@ class NetDNSResolver(object):
         #    delay = querier.delay
         #    duration = (delay.days*86400) + delay.seconds + \
         #               (float(delay.microseconds)/1000000.0)
-        duration='0.123'
+        duration = '0.123'
         obj['Query'] = {'Server': querier,
                                 'Time': time.strftime("%Y-%m-%d %H:%M:%SZ",
                                                       time.gmtime(time.time())),

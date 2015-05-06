@@ -35,7 +35,7 @@ class RecordSet(set):
     PRESENT record attached sets the preferredTTL.
     """
 
-    def __init__(self,rdtype,source=None,preferredTTL=None,exceptionOnBadTTL=False):
+    def __init__(self,rdtype,source = None,preferredTTL = None,exceptionOnBadTTL = False):
         """
 
         :param rdtype: the RecordType for this record set
@@ -49,10 +49,10 @@ class RecordSet(set):
 
         """
         super(RecordSet,self).__init__()
-        self._rdtype=RecordType.as_type(rdtype)
-        self._source=source
-        self._preferredTTL=preferredTTL
-        self._exceptionOnBadTTL=exceptionOnBadTTL
+        self._rdtype = RecordType.as_type(rdtype)
+        self._source = source
+        self._preferredTTL = preferredTTL
+        self._exceptionOnBadTTL = exceptionOnBadTTL
 
     @property
     def preferred_ttl(self):
@@ -67,8 +67,8 @@ class RecordSet(set):
         """
         if not self.has_common_ttl:
             raise RFC2181Violation()
-        if self.preferredTTL!=None:
-            if self.minimum_ttl==self.preferredTTL:
+        if self.preferredTTL != None:
+            if self.minimum_ttl == self.preferredTTL:
                 return self.preferredTTL
             else:
                 raise TTLIsNotPreferredException()
@@ -79,12 +79,12 @@ class RecordSet(set):
     def has_common_ttl(self):
         """Returns true if all of the TTLs in this set are the same.
         """
-        ttl=None
+        ttl = None
         for rec in self.present_records:
-            if ttl==None:
-                ttl=rec.ttl
+            if ttl == None:
+                ttl = rec.ttl
             else:
-                if rec.ttl!=ttl:
+                if rec.ttl != ttl:
                     return False
         return True
 
@@ -92,13 +92,13 @@ class RecordSet(set):
     def minimum_ttl(self):
         """Returns the minimum TTL for the record set
         """
-        ttl=None
+        ttl = None
         for rec in self.present_records:
-            if ttl==None:
-                ttl=rec.ttl
+            if ttl == None:
+                ttl = rec.ttl
             else:
                 if rec.ttl<ttl:
-                    ttl=rec.ttl
+                    ttl = rec.ttl
         return ttl
 
     @property
@@ -131,7 +131,7 @@ class RecordSet(set):
         """
         Return this pool as JSON serializable dict
         """
-        result={
+        result = {
             'type':self._rdtype.name,
             'source':self._source,
             'preferredTTL':self._preferredTTL,
@@ -145,35 +145,35 @@ class RecordSet(set):
         """returns a RecordSet built out of the JSON as encoded
         in the RecordSet.json property
         """
-        result=RecordSet(data['type'],
-                source=data['source'],
-                preferredTTL=data['preferredTTL'],
-                exceptionOnBadTTL=data['exceptionOnBadTTL'])
+        result = RecordSet(data['type'],
+                source = data['source'],
+                preferredTTL = data['preferredTTL'],
+                exceptionOnBadTTL = data['exceptionOnBadTTL'])
         for rec in data['records']:
-            result.attach(RecordSpec(json=rec))
+            result.attach(RecordSpec(json = rec))
         return result
 
-    def contains(self,spec,matchTTL=False):
+    def contains(self,spec,matchTTL = False):
         """Returns True if the record set contains this spec
         """
-        if spec.rdtype!=self._rdtype:
+        if spec.rdtype != self._rdtype:
             return False
         if matchTTL:
             return spec in self
         for rec in self:
-            if spec.rdata==rec.rdata:
+            if spec.rdata == rec.rdata:
                 return True
         return False
 
 
-    def find(self,spec,presence=RecordSpec.ANY_PRESENCE,matchTTL=False):
+    def find(self,spec,presence = RecordSpec.ANY_PRESENCE,matchTTL = False):
         """Return any record that matches the given spec
         """
-        if spec.rdtype!=self._rdtype:
+        if spec.rdtype != self._rdtype:
             return None
-        matchPresence=(presence!=RecordSpec.ANY_PRESENCE)
+        matchPresence = (presence != RecordSpec.ANY_PRESENCE)
         for rec in self:
-            if rec.match(spec,matchTTL=matchTTL,matchPresence=matchPresence):
+            if rec.match(spec,matchTTL = matchTTL,matchPresence = matchPresence):
                 return rec
         return None
 
@@ -186,7 +186,7 @@ class RecordSet(set):
         :param spec: The record spec or another record set
         :type spec: RecordSpec or RecordSet
         :raises ResourceRecordSourceClash: if records from another source are
-                              added and the set was constructed with source!=None
+                              added and the set was constructed with source != None
 
         """
         if not isinstance(spec,RecordSpec):
@@ -195,28 +195,28 @@ class RecordSet(set):
                     self.attach(r)
                 return
             elif isinstance(spec,dict):
-                spec=RecordsSpec(json=spec)
+                spec = RecordsSpec(json = spec)
             else:
                 raise ValueError("Can only add json or record specs to record sets")
 
-        if self._source!=None and spec.source!=self._source:
+        if self._source != None and spec.source != self._source:
             raise ResourceRecordSourceClash()
 
         # if we are respecting RFC2181 and a record is added with a TTL
         # that differs from the set, then raise an RFC2181Violation exception.
         if self._exceptionOnBadTTL and spec.is_present:
-            if self._preferredTTL==None:
-                self._preferredTTL=spec.ttl
-            if self._preferredTTL!=spec.ttl:
+            if self._preferredTTL == None:
+                self._preferredTTL = spec.ttl
+            if self._preferredTTL != spec.ttl:
                 raise RFC2181Violation()
 
-        if spec.rdtype!=self._rdtype:
+        if spec.rdtype != self._rdtype:
             raise ResourceRecordTypeClash("attempt to add %s to set of type %s" % (spec.rdtype,self._rdtype))
 
         # now, if we're adding a singleton,
         if spec.is_present and RecordType.is_singleton(self._rdtype):
             for r in self:
-                r.presence=r.ABSENT
+                r.presence = r.ABSENT
 
         # add the record if we are not there, removing it first - this is because the
         # match is not done on the presence flag, so if the record is in the set with
@@ -232,14 +232,14 @@ class RecordSet(set):
         if not isinstance(spec,RecordSpec):
             if isinstance(spec,RecordSet):
                 for r in spec:
-                    self.attach(r.changePresence(newpresence=RecordSpec.PRESENT))
+                    self.attach(r.changePresence(newpresence = RecordSpec.PRESENT))
                 return
             elif isinstance(spec,dict):
-                self.attach(RecordsSpec(json=spec,present=True))
+                self.attach(RecordsSpec(json = spec,present = True))
             else:
                 raise ValueError("Can only add json or record specs to record sets")
         else:
-            self.attach(spec.changePresence(newpresence=RecordSpec.PRESENT))
+            self.attach(spec.changePresence(newpresence = RecordSpec.PRESENT))
 
     def remove(self,spec):
         """Ensure that the given spec or record spec set is marked to be ABSENT
@@ -250,20 +250,20 @@ class RecordSet(set):
         if not isinstance(spec,RecordSpec):
             if isinstance(spec,RecordSet):
                 for r in spec:
-                    self.attach(r.changePresence(newpresence=RecordSpec.ABSENT))
+                    self.attach(r.changePresence(newpresence = RecordSpec.ABSENT))
                 return
             elif isinstance(spec,dict):
-                self.attach(RecordsSpec(json=spec,absent=True))
+                self.attach(RecordsSpec(json = spec,absent = True))
             else:
                 raise ValueError("Can only add json or record specs to record sets")
         else:
-            self.attach(spec.changePresence(newpresence=RecordSpec.ABSENT))
+            self.attach(spec.changePresence(newpresence = RecordSpec.ABSENT))
 
     @property
     def present_records(self):
         """Return only those records marked to be PRESENT"""
         for r in self:
-            if r.presence==r.PRESENT:
+            if r.presence == r.PRESENT:
                 yield r
     @property
     def present_record_count(self):
@@ -279,7 +279,7 @@ class RecordSet(set):
     def absent_records(self):
         """Return only those records marked to be ABSENT"""
         for r in self:
-            if r.presence==r.ABSENT:
+            if r.presence == r.ABSENT:
                 yield r
 
     @property
@@ -298,5 +298,5 @@ class RecordSet(set):
         you to get rid of all the PRESENT or all the ABSENT records in a set."""
         assert presence in (RecordSpec.PRESENT,RecordSpec.ABSENT)
         for r in list(self):
-            if r.presence!=presence:
+            if r.presence != presence:
                 self.discard(r)

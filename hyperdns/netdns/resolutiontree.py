@@ -12,7 +12,7 @@ class RoutingPolicyEntry:
     routing policy node.
     """
     def __init__(self):
-        self._supporting_info={}
+        self._supporting_info = {}
 
     """
     Each node has a local path element, that is used to generate a flattened representation
@@ -47,8 +47,8 @@ class RoutingPolicyNode:
     A RoutingPolicyNode defines a policy_style, which is either 'Geo' or 'Weighted'.  the policy can also
     be either 'Record' or 'RecordSet'
     """
-    def __init__(self,policy_style=None):
-        self._policy_style=policy_style
+    def __init__(self,policy_style = None):
+        self._policy_style = policy_style
 
     @property
     def policy_style(self):
@@ -137,7 +137,7 @@ class GeoNode(RoutingPolicyNode):
     """
     # entries: Map of Region -> GeoEntry
     def __init__(self,entries):
-        super(GeoNode,self).__init__(policy_style='Geo')
+        super(GeoNode,self).__init__(policy_style = 'Geo')
         assert all([isinstance(key,Region) for key in entries.keys()])
         assert all([isinstance(value,GeoEntry) for value in entries.values()])
         self._entries = entries
@@ -189,22 +189,22 @@ class GeoNode(RoutingPolicyNode):
             result['members'].append(member)
         return result
 
-    def print(self,indent='',prefix='',suffix='',file=sys.stdout):
-        print('%s%sGeo%s'%(indent,prefix,suffix),file=file)
+    def print(self,indent = '',prefix = '',suffix = '',file = sys.stdout):
+        print('%s%sGeo%s'%(indent,prefix,suffix),file = file)
         for key in sorted(self.entries.keys()):
             entry = self.entries[key]
             if entry.cname == None:
                 csuffix = ''
             else:
                 csuffix = '; '+str(RecordNode(entry.cname))
-            entry.child.print(indent=indent+'    ',
-                              prefix='Region "%s": '%(key),
-                              suffix=csuffix,
-                              file=file)
+            entry.child.print(indent = indent+'    ',
+                              prefix = 'Region "%s": '%(key),
+                              suffix = csuffix,
+                              file = file)
 
 class WeightedEntry(RoutingPolicyEntry):
 
-    def __init__(self,weight,cname,child,index=None):
+    def __init__(self,weight,cname,child,index = None):
         super(WeightedEntry,self).__init__()
         assert isinstance(index,int) or index == None
         assert isinstance(weight,int) or isinstance(weight,float)
@@ -246,7 +246,7 @@ class WeightedEntry(RoutingPolicyEntry):
 class WeightedNode(RoutingPolicyNode):
 
     def __init__(self,entries):
-        super(WeightedNode,self).__init__(policy_style='Weighted')
+        super(WeightedNode,self).__init__(policy_style = 'Weighted')
         assert all([isinstance(e,WeightedEntry) for e in entries])
 
         total_weight = sum([e.weight for e in entries])
@@ -255,10 +255,10 @@ class WeightedNode(RoutingPolicyNode):
         else:
             normalized = [e.weight/total_weight for e in entries]
 
-        self._entries = [WeightedEntry(weight=normalized[i],
-                                         cname=entries[i].cname,
-                                         child=entries[i].child,
-                                         index=i)
+        self._entries = [WeightedEntry(weight = normalized[i],
+                                         cname = entries[i].cname,
+                                         child = entries[i].child,
+                                         index = i)
                                   for i in range(0,len(entries))]
 
     @property
@@ -276,16 +276,16 @@ class WeightedNode(RoutingPolicyNode):
         return (isinstance(other,WeightedNode) and
                 other.entries == self.entries)
 
-    def print(self,indent='',prefix='',suffix='',file=sys.stdout):
-        print('%s%sWeighted%s'%(indent,prefix,suffix),file=file)
+    def print(self,indent = '',prefix = '',suffix = '',file = sys.stdout):
+        print('%s%sWeighted%s'%(indent,prefix,suffix),file = file)
         for entry in self.entries:
             csuffix = ' (weight %2.1f%%)'%(100*entry.weight)
             if entry.cname != None:
                 csuffix += '; '+str(RecordNode(entry.cname))
-            entry.child.print(indent=indent+'    ',
-                              prefix='Group %d: '%(entry.index+1),
-                              suffix=csuffix,
-                              file=file)
+            entry.child.print(indent = indent+'    ',
+                              prefix = 'Group %d: '%(entry.index+1),
+                              suffix = csuffix,
+                              file = file)
 
     def to_json(self):
         result = { 'kind': self.policy_style,
@@ -312,7 +312,7 @@ class WeightedNode(RoutingPolicyNode):
 class RecordGroupNode(RoutingPolicyNode):
 
     def __init__(self,entries):
-        super(RecordGroupNode,self).__init__(policy_style='RecordSet')
+        super(RecordGroupNode,self).__init__(policy_style = 'RecordSet')
 
         assert all([isinstance(e,RecordNode) for e in entries])
         self._entries = entries
@@ -332,10 +332,10 @@ class RecordGroupNode(RoutingPolicyNode):
         return (isinstance(other,RecordGroupNode) and
                 other.entries == self.entries)
 
-    def print(self,indent='',prefix='',suffix='',file=sys.stdout):
-        print('%s%sRecordSet%s'%(indent,prefix,suffix),file=file)
+    def print(self,indent = '',prefix = '',suffix = '',file = sys.stdout):
+        print('%s%sRecordSet%s'%(indent,prefix,suffix),file = file)
         for e in self.entries:
-            e.print(indent+'    ',file=file)
+            e.print(indent+'    ',file = file)
 
     def to_json(self):
         return { 'kind': self.policy_style,
@@ -351,7 +351,7 @@ class RecordGroupNode(RoutingPolicyNode):
 class RecordNode(RoutingPolicyNode):
 
     def __init__(self,record):
-        super(RecordNode,self).__init__(policy_style='Record')
+        super(RecordNode,self).__init__(policy_style = 'Record')
         assert isinstance(record,RecordSpec)
         self._record = record
 
@@ -383,8 +383,8 @@ class RecordNode(RoutingPolicyNode):
         rdata = self.record.rdata
         return '%d %s %s %s'%(ttl,rdclass,rdtype,rdata)
 
-    def print(self,indent='',prefix='',suffix='',file=sys.stdout):
-        print('%s%sRecord %s%s'%(indent,prefix,self,suffix),file=file)
+    def print(self,indent = '',prefix = '',suffix = '',file = sys.stdout):
+        print('%s%sRecord %s%s'%(indent,prefix,self,suffix),file = file)
 
     def to_json(self):
         return { 'kind': self.policy_style,
@@ -424,7 +424,7 @@ class ResolutionTree:
             cname_rdata = data.get('cname')
             cname_ttl = data.get('cname_ttl')
             if cname_rdata != None and cname_ttl != None:
-                cname = RecordSpec(rdtype=RecordType.CNAME,rdata=cname_rdata,ttl=cname_ttl)
+                cname = RecordSpec(rdtype = RecordType.CNAME,rdata = cname_rdata,ttl = cname_ttl)
             else:
                 cname = None
             if kind == 'Geo':
@@ -436,7 +436,7 @@ class ResolutionTree:
             elif kind == 'RecordSet':
                 node = RecordGroupNode([ pm.node for pm in [recurse(m) for m in members ]])
             elif kind == 'Record':
-                spec = RecordSpec(json=data['value'])
+                spec = RecordSpec(json = data['value'])
                 node = RecordNode(spec)
             else:
                 raise Exception('Unknown kind: %s'%(kind))
@@ -455,11 +455,11 @@ class ResolutionTree:
         else:
             return None
 
-    def print(self,indent='',file=sys.stdout):
+    def print(self,indent = '',file = sys.stdout):
         if self.root == None:
-            print('%sEmpty'%(indent),file=file)
+            print('%sEmpty'%(indent),file = file)
         else:
-            self.root.print(indent=indent,file=file)
+            self.root.print(indent = indent,file = file)
 
     @property
     def referenced_cnames(self):

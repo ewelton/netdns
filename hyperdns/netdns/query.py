@@ -56,7 +56,7 @@ class Buffer(object):
     bytearray(b'xx234')
     """
 
-    def __init__(self,data=b''):
+    def __init__(self,data = b''):
         """
             Initialise Buffer from data
         """
@@ -74,7 +74,7 @@ class Buffer(object):
             Gen len bytes at current offset (& increment offset)
         """
         if length > self.remaining():
-            raise BufferError("Not enough bytes [offset=%d,remaining=%d,requested=%d]" %
+            raise BufferError("Not enough bytes [offset = %d,remaining = %d,requested = %d]" %
                     (self.offset,self.remaining(),length))
         start = self.offset
         end = self.offset + length
@@ -183,14 +183,14 @@ class DNSBuffer(Buffer):
     aaa.bbb.ccc.
     """
 
-    def __init__(self,data=b''):
+    def __init__(self,data = b''):
         """
             Add 'names' dict to cache stored labels
         """
         super(DNSBuffer,self).__init__(data)
         self.names = {}
 
-    def decode_name(self,last=-1):
+    def decode_name(self,last = -1):
         """
             Decode label at current offset in buffer (following pointers
             to cached elements where necessary)
@@ -205,13 +205,13 @@ class DNSBuffer(Buffer):
                 pointer = get_bits(self.unpack("!H")[0],0,14)
                 save = self.offset
                 if last == save:
-                    raise BufferError("Recursive pointer in NodeName [offset=%d,pointer=%d,length=%d]" %
+                    raise BufferError("Recursive pointer in NodeName [offset = %d,pointer = %d,length = %d]" %
                             (self.offset,pointer,len(self.data)))
                 if pointer < self.offset:
                     self.offset = pointer
                 else:
                     # Pointer can't point forwards
-                    raise BufferError("Invalid pointer in NodeName [offset=%d,pointer=%d,length=%d]" %
+                    raise BufferError("Invalid pointer in NodeName [offset = %d,pointer = %d,length = %d]" %
                             (self.offset,pointer,len(self.data)))
                 label.extend(self.decode_name(save).label)
                 self.offset = save
@@ -275,7 +275,7 @@ class DNSBuffer(Buffer):
 
 
 
-def get_bits(data,offset,bits=1):
+def get_bits(data,offset,bits = 1):
     """
         Get specified bits from integer
 
@@ -288,7 +288,7 @@ def get_bits(data,offset,bits=1):
     mask = ((1 << bits) - 1) << offset
     return (data & mask) >> offset
 
-def set_bits(data,value,offset,bits=1):
+def set_bits(data,value,offset,bits = 1):
     """
         Set specified bits in integer
 
@@ -316,9 +316,9 @@ class DNSRecord(object):
 
         >>> d = DNSRecord()
         >>> d.add_question(DNSQuestion("abc.com")) # Or DNSRecord.question("abc.com")
-        >>> d.add_answer(RR("abc.com",QTYPE.CNAME,ttl=60,rdata=CNAME("ns.abc.com")))
-        >>> d.add_auth(RR("abc.com",QTYPE.SOA,ttl=60,rdata=SOA("ns.abc.com","admin.abc.com",(20140101,3600,3600,3600,3600))))
-        >>> d.add_ar(RR("ns.abc.com",ttl=60,rdata=A("1.2.3.4")))
+        >>> d.add_answer(RR("abc.com",QTYPE.CNAME,ttl = 60,rdata = CNAME("ns.abc.com")))
+        >>> d.add_auth(RR("abc.com",QTYPE.SOA,ttl = 60,rdata = SOA("ns.abc.com","admin.abc.com",(20140101,3600,3600,3600,3600))))
+        >>> d.add_ar(RR("ns.abc.com",ttl = 60,rdata = A("1.2.3.4")))
         >>> print(d)
         ;; ->>HEADER<<- opcode: QUERY, status: NOERROR, id: ...
         ;; flags: rd; QUERY: 1, ANSWER: 1, AUTHORITY: 1, ADDITIONAL: 1
@@ -355,15 +355,15 @@ class DNSRecord(object):
                 auth.append(RR.parse(buffer))
             for i in range(header.ar):
                 ar.append(RR.parse(buffer))
-            return cls(header,questions,rr,auth=auth,ar=ar)
+            return cls(header,questions,rr,auth = auth,ar = ar)
         except DNSError:
             raise
         except (BufferError) as e:
-            raise DNSError("Error unpacking DNSRecord [offset=%d]: %s" % (
+            raise DNSError("Error unpacking DNSRecord [offset = %d]: %s" % (
                                     buffer.offset,e))
 
     @classmethod
-    def question(cls,qname,qtype="A",qclass="IN"):
+    def question(cls,qname,qtype = "A",qclass = "IN"):
         """
             Shortcut to create question
 
@@ -381,12 +381,12 @@ class DNSRecord(object):
             ;; QUESTION SECTION:
             ;www.google.com.                IN      NS
         """
-        return DNSRecord(q=DNSQuestion(qname,getattr(QTYPE,qtype),
+        return DNSRecord(q = DNSQuestion(qname,getattr(QTYPE,qtype),
                                              getattr(CLASS,qclass)))
 
 
-    def __init__(self,header=None,questions=None,
-                      rr=None,q=None,a=None,auth=None,ar=None):
+    def __init__(self,header = None,questions = None,
+                      rr = None,q = None,a = None,auth = None,ar = None):
         """
             Create new DNSRecord
         """
@@ -402,13 +402,13 @@ class DNSRecord(object):
             self.rr.append(a)
         self.set_header_qa()
 
-    def reply(self,ra=1,aa=1):
+    def reply(self,ra = 1,aa = 1):
         """
             Create skeleton reply packet
 
             >>> q = DNSRecord.question("abc.com")
             >>> a = q.reply()
-            >>> a.add_answer(RR("abc.com",QTYPE.A,rdata=A("1.2.3.4"),ttl=60))
+            >>> a.add_answer(RR("abc.com",QTYPE.A,rdata = A("1.2.3.4"),ttl = 60))
             >>> print(a)
             ;; ->>HEADER<<- opcode: QUERY, status: NOERROR, id: ...
             ;; flags: qr aa rd ra; QUERY: 1, ANSWER: 1, AUTHORITY: 0, ADDITIONAL: 0
@@ -417,12 +417,12 @@ class DNSRecord(object):
             ;; ANSWER SECTION:
             abc.com.                60      IN      A       1.2.3.4
         """
-        return DNSRecord(DNSHeader(id=self.header.id,
-                                   bitmap=self.header.bitmap,
-                                   qr=1,ra=ra,aa=aa),
-                         q=self.q)
+        return DNSRecord(DNSHeader(id = self.header.id,
+                                   bitmap = self.header.bitmap,
+                                   qr = 1,ra = ra,aa = aa),
+                         q = self.q)
 
-    def replyZone(self,zone,ra=1,aa=1):
+    def replyZone(self,zone,ra = 1,aa = 1):
         """
             Create reply with response data in zone-file format
             >>> q = DNSRecord.question("abc.com")
@@ -435,11 +435,11 @@ class DNSRecord(object):
             ;; ANSWER SECTION:
             abc.com.                60      IN      A       1.2.3.4
         """
-        return DNSRecord(DNSHeader(id=self.header.id,
-                                   bitmap=self.header.bitmap,
-                                   qr=1,ra=ra,aa=aa),
-                         q=self.q,
-                         rr=RR.fromZone(zone))
+        return DNSRecord(DNSHeader(id = self.header.id,
+                                   bitmap = self.header.bitmap,
+                                   qr = 1,ra = ra,aa = aa),
+                         q = self.q,
+                         rr = RR.fromZone(zone))
 
     def add_question(self,*q):
         """
@@ -587,11 +587,11 @@ class DNSRecord(object):
             ;; flags: qr aa tc rd ra; QUERY: 0, ANSWER: 0, AUTHORITY: 0, ADDITIONAL: 0
 
         """
-        return DNSRecord(DNSHeader(id=self.header.id,
-                                   bitmap=self.header.bitmap,
-                                   tc=1))
+        return DNSRecord(DNSHeader(id = self.header.id,
+                                   bitmap = self.header.bitmap,
+                                   tc = 1))
 
-    def send(self,dest,port=53,tcp=False,timeout=None):
+    def send(self,dest,port = 53,tcp = False,timeout = None):
         """
             Send packet to nameserver and return response
         """
@@ -620,7 +620,7 @@ class DNSRecord(object):
             sock.close()
         return response
 
-    def format(self,prefix="",sort=False):
+    def format(self,prefix = "",sort = False):
         """
             Formatted 'repr'-style representation of record
             (optionally with prefix and/or sorted RRs)
@@ -633,7 +633,7 @@ class DNSRecord(object):
         sections.extend(s([repr(rr) for rr in self.ar]))
         return prefix + ("\n" + prefix).join(sections)
 
-    def toZone(self,prefix=""):
+    def toZone(self,prefix = ""):
         """
             Formatted 'DiG' (zone) style output
             (with optional prefix)
@@ -776,10 +776,10 @@ class DNSHeader(object):
             (id,bitmap,q,a,auth,ar) = buffer.unpack("!HHHHHH")
             return cls(id,bitmap,q,a,auth,ar)
         except (BufferError) as e:
-            raise DNSError("Error unpacking DNSHeader [offset=%d]: %s" % (
+            raise DNSError("Error unpacking DNSHeader [offset = %d]: %s" % (
                                 buffer.offset,e))
 
-    def __init__(self,id=None,bitmap=None,q=0,a=0,auth=0,ar=0,**args):
+    def __init__(self,id = None,bitmap = None,q = 0,a = 0,auth = 0,ar = 0,**args):
         if id is None:
             self.id = random.randint(0,65535)
         else:
@@ -877,17 +877,17 @@ class DNSHeader(object):
               self.rd and 'RD',
               self.ra and 'RA' ]
         if OPCODE.get(self.opcode) == 'UPDATE':
-            f1='zo'
-            f2='pr'
-            f3='up'
-            f4='ad'
+            f1 = 'zo'
+            f2 = 'pr'
+            f3 = 'up'
+            f4 = 'ad'
         else:
-            f1='q'
-            f2='a'
-            f3='ns'
-            f4='ar'
-        return "<DNS Header: id=0x%x type=%s opcode=%s flags=%s " \
-                            "rcode='%s' %s=%d %s=%d %s=%d %s=%d>" % (
+            f1 = 'q'
+            f2 = 'a'
+            f3 = 'ns'
+            f4 = 'ar'
+        return "<DNS Header: id = 0x%x type = %s opcode = %s flags = %s " \
+                            "rcode = '%s' %s = %d %s = %d %s = %d %s = %d>" % (
                     self.id,
                     QR.get(self.qr),
                     OPCODE.get(self.opcode),
@@ -935,10 +935,10 @@ class DNSQuestion(object):
             qtype,qclass = buffer.unpack("!HH")
             return cls(qname,qtype,qclass)
         except (BufferError) as e:
-            raise DNSError("Error unpacking DNSQuestion [offset=%d]: %s" % (
+            raise DNSError("Error unpacking DNSQuestion [offset = %d]: %s" % (
                                 buffer.offset,e))
 
-    def __init__(self,qname=None,qtype=1,qclass=1):
+    def __init__(self,qname = None,qtype = 1,qclass = 1):
         self.qname = qname
         self.qtype = qtype
         self.qclass = qclass
@@ -963,7 +963,7 @@ class DNSQuestion(object):
                                              QTYPE.get(self.qtype))
 
     def __repr__(self):
-        return "<DNS Question: '%s' qtype=%s qclass=%s>" % (
+        return "<DNS Question: '%s' qtype = %s qclass = %s>" % (
                     self.qname, QTYPE.get(self.qtype), CLASS.get(self.qclass))
 
     def __str__(self):
@@ -999,7 +999,7 @@ class EDNSOption(object):
         buffer.append(self.data)
 
     def __repr__(self):
-        return "<EDNS Option: Code=%d Data='%s'>" % (
+        return "<EDNS Option: Code = %d Data = '%s'>" % (
                     self.code,binascii.hexlify(self.data).decode())
 
     def toZone(self):
@@ -1053,17 +1053,17 @@ class RR(object):
                     rdata = ''
             return cls(rname,rtype,rclass,ttl,rdata)
         except (BufferError) as e:
-            raise DNSError("Error unpacking RR [offset=%d]: %s" % (
+            raise DNSError("Error unpacking RR [offset = %d]: %s" % (
                                 buffer.offset,e))
 
     @classmethod
-    def fromZone(cls,zone,origin="",ttl=0):
+    def fromZone(cls,zone,origin = "",ttl = 0):
         """
             Parse RR data from zone file and return list of RRs
         """
-        return list(ZoneParser(zone,origin=origin,ttl=ttl))
+        return list(ZoneParser(zone,origin = origin,ttl = ttl))
 
-    def __init__(self,rname=None,rtype=1,rclass=1,ttl=0,rdata=None):
+    def __init__(self,rname = None,rtype = 1,rclass = 1,ttl = 0,rdata = None):
         self.rname = rname
         self.rtype = rtype
         self.rclass = rclass
@@ -1103,12 +1103,12 @@ class RR(object):
 
     def __repr__(self):
         if self.rtype == QTYPE.OPT:
-            s = ["<DNS OPT: edns_ver=%d do=%d ext_rcode=%d udp_len=%d>" % (
+            s = ["<DNS OPT: edns_ver = %d do = %d ext_rcode = %d udp_len = %d>" % (
                         self.edns_ver,self.edns_do,self.edns_rcode,self.edns_len)]
             s.extend([repr(opt) for opt in self.rdata])
             return "\n".join(s)
         else:
-            return "<DNS RR: '%s' rtype=%s rclass=%s ttl=%d rdata='%s'>" % (
+            return "<DNS RR: '%s' rtype = %s rclass = %s ttl = %d rdata = '%s'>" % (
                     self.rname, QTYPE.get(self.rtype), CLASS.get(self.rclass),
                     self.ttl, self.rdata)
 
@@ -1171,11 +1171,11 @@ class RD(object):
             data = buffer.get(length)
             return cls(data)
         except (BufferError) as e:
-            raise DNSError("Error unpacking RD [offset=%d]: %s" %
+            raise DNSError("Error unpacking RD [offset = %d]: %s" %
                                     (buffer.offset,e))
 
     @classmethod
-    def fromZone(cls,rd,origin=None):
+    def fromZone(cls,rd,origin = None):
         """
             Create new record from zone format data
             RD is a list of strings parsed from DiG output
@@ -1184,7 +1184,7 @@ class RD(object):
         # (DiG prepends "\\# <len>" to the hexdump so get last item)
         return cls(binascii.unhexlify(rd[-1].encode('ascii')))
 
-    def __init__(self,data=b""):
+    def __init__(self,data = b""):
         # Assume raw bytes
         self.data = bytes(data)
 
@@ -1233,11 +1233,11 @@ class TXT(RD):
                                         (txtlength,length))
             return cls(data)
         except (BufferError) as e:
-            raise DNSError("Error unpacking TXT [offset=%d]: %s" %
+            raise DNSError("Error unpacking TXT [offset = %d]: %s" %
                                         (buffer.offset,e))
 
     @classmethod
-    def fromZone(cls,rd,origin=None):
+    def fromZone(cls,rd,origin = None):
         return cls(rd[0].encode())
 
     def pack(self,buffer):
@@ -1252,7 +1252,7 @@ class TXT(RD):
     def __repr__(self):
         # Pyyhon 2/3 hack
         # FIXME UnicodeDecodeError: 'utf-8' codec can't decode byte 0xfc in position 1
-        return self.data if isinstance(self.data,str) else self.data.decode(errors='replace')
+        return self.data if isinstance(self.data,str) else self.data.decode(errors = 'replace')
 
 class A(RD):
 
@@ -1264,11 +1264,11 @@ class A(RD):
             data = buffer.unpack("!BBBB")
             return cls(data)
         except (BufferError) as e:
-            raise DNSError("Error unpacking A [offset=%d]: %s" %
+            raise DNSError("Error unpacking A [offset = %d]: %s" %
                                 (buffer.offset,e))
 
     @classmethod
-    def fromZone(cls,rd,origin=None):
+    def fromZone(cls,rd,origin = None):
         return cls(rd[0])
 
     def __init__(self,data):
@@ -1353,11 +1353,11 @@ class AAAA(RD):
             data = buffer.unpack("!16B")
             return cls(data)
         except (BufferError) as e:
-            raise DNSError("Error unpacking AAAA [offset=%d]: %s" %
+            raise DNSError("Error unpacking AAAA [offset = %d]: %s" %
                                         (buffer.offset,e))
 
     @classmethod
-    def fromZone(cls,rd,origin=None):
+    def fromZone(cls,rd,origin = None):
         return cls(rd[0])
 
     def __init__(self,data):
@@ -1383,14 +1383,14 @@ class MX(RD):
             mx = buffer.decode_name()
             return cls(mx,preference)
         except (BufferError) as e:
-            raise DNSError("Error unpacking MX [offset=%d]: %s" %
+            raise DNSError("Error unpacking MX [offset = %d]: %s" %
                                         (buffer.offset,e))
 
     @classmethod
-    def fromZone(cls,rd,origin=None):
+    def fromZone(cls,rd,origin = None):
         return cls(label(rd[1],origin),int(rd[0]))
 
-    def __init__(self,label=None,preference=10):
+    def __init__(self,label = None,preference = 10):
         self.label = label
         self.preference = preference
 
@@ -1422,14 +1422,14 @@ class CNAME(RD):
             label = buffer.decode_name()
             return cls(label)
         except (BufferError) as e:
-            raise DNSError("Error unpacking CNAME [offset=%d]: %s" %
+            raise DNSError("Error unpacking CNAME [offset = %d]: %s" %
                                         (buffer.offset,e))
 
     @classmethod
-    def fromZone(cls,rd,origin=None):
+    def fromZone(cls,rd,origin = None):
         return cls(label(rd[0],origin))
 
-    def __init__(self,label=None):
+    def __init__(self,label = None):
         self.label = label
 
     def set_label(self,label):
@@ -1468,14 +1468,14 @@ class SOA(RD):
             times = buffer.unpack("!IIIII")
             return cls(mname,rname,times)
         except (BufferError) as e:
-            raise DNSError("Error unpacking SOA [offset=%d]: %s" %
+            raise DNSError("Error unpacking SOA [offset = %d]: %s" %
                                         (buffer.offset,e))
 
     @classmethod
-    def fromZone(cls,rd,origin=None):
+    def fromZone(cls,rd,origin = None):
         return cls(label(rd[0],origin),label(rd[1],origin),[parse_time(t) for t in rd[2:]])
 
-    def __init__(self,mname=None,rname=None,times=None):
+    def __init__(self,mname = None,rname = None,times = None):
         self.mname = mname
         self.rname = rname
         self.times = tuple(times) if times else (0,0,0,0,0)
@@ -1526,14 +1526,14 @@ class SRV(RD):
             target = buffer.decode_name()
             return cls(priority,weight,port,target)
         except (BufferError) as e:
-            raise DNSError("Error unpacking SRV [offset=%d]: %s" %
+            raise DNSError("Error unpacking SRV [offset = %d]: %s" %
                                         (buffer.offset,e))
 
     @classmethod
-    def fromZone(cls,rd,origin=None):
+    def fromZone(cls,rd,origin = None):
         return cls(int(rd[0]),int(rd[1]),int(rd[2]),rd[3])
 
-    def __init__(self,priority=0,weight=0,port=0,target=None):
+    def __init__(self,priority = 0,weight = 0,port = 0,target = None):
         self.priority = priority
         self.weight = weight
         self.port = port
@@ -1577,17 +1577,17 @@ class NAPTR(RD):
             replacement = buffer.decode_name()
             return cls(order, preference, flags, service, regexp, replacement)
         except (BufferError) as e:
-            raise DNSError("Error unpacking NAPTR [offset=%d]: %s" %
+            raise DNSError("Error unpacking NAPTR [offset = %d]: %s" %
                                     (buffer.offset,e))
 
     @classmethod
-    def fromZone(cls,rd,origin=None):
+    def fromZone(cls,rd,origin = None):
         encode = lambda s : s.encode()
         _label = lambda s : label(s,origin)
         m = (int,int,encode,encode,encode,_label)
         return cls(*[ f(v) for f,v in zip(m,rd)])
 
-    def __init__(self,order,preference,flags,service,regexp,replacement=None):
+    def __init__(self,order,preference,flags,service,regexp,replacement = None):
         self.order = order
         self.preference = preference
         self.flags = flags
@@ -1639,11 +1639,11 @@ class DNSKEY(RD):
             key = buffer.get(length - 4)
             return cls(flags,protocol,algorithm,key)
         except (BufferError) as e:
-            raise DNSError("Error unpacking DNSKEY [offset=%d]: %s" %
+            raise DNSError("Error unpacking DNSKEY [offset = %d]: %s" %
                                         (buffer.offset,e))
 
     @classmethod
-    def fromZone(cls,rd,origin=None):
+    def fromZone(cls,rd,origin = None):
         return cls(int(rd[0]),int(rd[1]),int(rd[2]),
                    base64.b64decode(("".join(rd[3:])).encode('ascii')))
 
@@ -1684,11 +1684,11 @@ class RRSIG(RD):
             return cls(covered,algorithm,labels,orig_ttl,sig_exp,sig_inc,key_tag,
                             name,sig)
         except (BufferError) as e:
-            raise DNSError("Error unpacking DNSKEY [offset=%d]: %s" %
+            raise DNSError("Error unpacking DNSKEY [offset = %d]: %s" %
                                         (buffer.offset,e))
 
     @classmethod
-    def fromZone(cls,rd,origin=None):
+    def fromZone(cls,rd,origin = None):
         return cls(getattr(QTYPE,rd[0]),int(rd[1]),int(rd[2]),int(rd[3]),
                         int(time.mktime(time.strptime(rd[4]+'GMT',"%Y%m%d%H%M%S%Z"))),
                         int(time.mktime(time.strptime(rd[5]+'GMT',"%Y%m%d%H%M%S%Z"))),

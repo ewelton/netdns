@@ -117,7 +117,7 @@ html_theme_options = {
   'inner_theme': True,
   'inner_theme_name': 'bootswatch-simplex',
   'googlewebfont': True,
-  'googlewebfont_url': 'http://fonts.googleapis.com/css?family=Oxygen',
+  'googlewebfont_url': 'http://fonts.googleapis.com/css?family = Oxygen',
   'googlewebfont_style': "font-family: 'Oxygen', sans-serif",
 }
 

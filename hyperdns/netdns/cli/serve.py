@@ -68,8 +68,8 @@ class DNSHandler(socketserver.BaseRequestHandler):
 def serve(ctx,**kwargs):
     """Start a server on port 15353
     """
-    address=""
-    port=15353
+    address = ""
+    port = 15353
     #logging.config.dictConfig(lconfig)
     logging.basicConfig()
     server = socketserver.UDPServer((address,port),DNSHandler)
@@ -123,7 +123,7 @@ class DNSLogger:
             log_data          - Dump full request/response
     """
 
-    def __init__(self,log="",prefix=True):
+    def __init__(self,log = "",prefix = True):
         """
             Selectively enable log hooks depending on log argument
             (comma separated list of hooks to enable/disable)
@@ -216,7 +216,7 @@ class DNSLogger:
                     e))
 
     def log_data(self,dnsobj):
-        print("\n",dnsobj.toZone("    "),"\n",sep="")
+        print("\n",dnsobj.toZone("    "),"\n",sep = "")
 
 
 
@@ -251,7 +251,7 @@ class ProxyResolver(BaseResolver):
         if handler.protocol == 'udp':
             proxy_r = request.send(self.address,self.port)
         else:
-            proxy_r = request.send(self.address,self.port,tcp=True)
+            proxy_r = request.send(self.address,self.port,tcp = True)
         reply = DNSRecord.parse(proxy_r)
         return reply
 
@@ -309,24 +309,24 @@ if __name__ == '__main__':
 
     import argparse,sys,time
 
-    p = argparse.ArgumentParser(description="DNS Proxy")
-    p.add_argument("--port","-p",type=int,default=53,
-                    metavar="<port>",
-                    help="Local proxy port (default:53)")
-    p.add_argument("--address","-a",default="",
-                    metavar="<address>",
-                    help="Local proxy listen address (default:all)")
-    p.add_argument("--upstream","-u",default="8.8.8.8:53",
-            metavar="<dns server:port>",
-                    help="Upstream DNS server:port (default:8.8.8.8:53)")
-    p.add_argument("--tcp",action='store_true',default=False,
-                    help="TCP proxy (default: UDP only)")
-    p.add_argument("--passthrough",action='store_true',default=False,
-                    help="Dont decode/re-encode request/response (default: off)")
-    p.add_argument("--log",default="request,reply,truncated,error",
-                    help="Log hooks to enable (default: +request,+reply,+truncated,+error,-recv,-send,-data)")
-    p.add_argument("--log-prefix",action='store_true',default=False,
-                    help="Log prefix (timestamp/handler/resolver) (default: False)")
+    p = argparse.ArgumentParser(description = "DNS Proxy")
+    p.add_argument("--port","-p",type = int,default = 53,
+                    metavar = "<port>",
+                    help = "Local proxy port (default:53)")
+    p.add_argument("--address","-a",default = "",
+                    metavar = "<address>",
+                    help = "Local proxy listen address (default:all)")
+    p.add_argument("--upstream","-u",default = "8.8.8.8:53",
+            metavar = "<dns server:port>",
+                    help = "Upstream DNS server:port (default:8.8.8.8:53)")
+    p.add_argument("--tcp",action = 'store_true',default = False,
+                    help = "TCP proxy (default: UDP only)")
+    p.add_argument("--passthrough",action = 'store_true',default = False,
+                    help = "Dont decode/re-encode request/response (default: off)")
+    p.add_argument("--log",default = "request,reply,truncated,error",
+                    help = "Log hooks to enable (default: +request,+reply,+truncated,+error,-recv,-send,-data)")
+    p.add_argument("--log-prefix",action = 'store_true',default = False,
+                    help = "Log prefix (timestamp/handler/resolver) (default: False)")
     args = p.parse_args()
 
     args.dns,_,args.dns_port = args.upstream.partition(':')
@@ -341,19 +341,19 @@ if __name__ == '__main__':
     handler = PassthroughDNSHandler if args.passthrough else DNSHandler
     logger = DNSLogger(args.log,args.log_prefix)
     udp_server = DNSServer(resolver,
-                           port=args.port,
-                           address=args.address,
-                           logger=logger,
-                           handler=handler)
+                           port = args.port,
+                           address = args.address,
+                           logger = logger,
+                           handler = handler)
     udp_server.start_thread()
 
     if args.tcp:
         tcp_server = DNSServer(resolver,
-                               port=args.port,
-                               address=args.address,
-                               tcp=True,
-                               logger=logger,
-                               handler=handler)
+                               port = args.port,
+                               address = args.address,
+                               tcp = True,
+                               logger = logger,
+                               handler = handler)
         tcp_server.start_thread()
 
     while udp_server.isAlive():

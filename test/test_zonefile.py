@@ -1,7 +1,7 @@
 import os,unittest,json
 from hyperdns.netdns import ZoneData
 
-example_com_zonefile="""
+example_com_zonefile = """
 $TTL 36000
 $ORIGIN example1.com.
 example1.com. IN      SOA     ns1.example1.com. hostmaster.example1.com. (
@@ -26,7 +26,7 @@ ftp.example1.com.        86400 CNAME     example1.com.
 webmail.example1.com.    86400 CNAME     example1.com.
 """
 
-example_com_dict={
+example_com_dict = {
     "fqdn": "example1.com.",
     "resources": [
         {
@@ -189,7 +189,7 @@ example_com_dict={
     ]
 }
 
-example_com_json=json.dumps(example_com_dict)
+example_com_json = json.dumps(example_com_dict)
 
 class TestCase(unittest.TestCase):
 
@@ -202,13 +202,13 @@ class TestCase(unittest.TestCase):
     def test_load_zonefile_text(self):
         """Test loading a zonefile from text
         """
-        zone=ZoneData.fromZonefileText(example_com_zonefile)
-        assert len(list(zone.resources))==9
-        assert zone.fqdn=='example1.com.'
+        zone = ZoneData.fromZonefileText(example_com_zonefile)
+        assert len(list(zone.resources)) == 9
+        assert zone.fqdn == 'example1.com.'
 
     def test_create_zone_from_dict(self):
-        zone=ZoneData.from_json(example_com_dict)
-        assert len(list(zone.resources))==9
-        assert zone.fqdn=='example1.com.'
+        zone = ZoneData.from_json(example_com_dict)
+        assert len(list(zone.resources)) == 9
+        assert zone.fqdn == 'example1.com.'
 
 

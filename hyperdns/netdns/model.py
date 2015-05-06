@@ -19,7 +19,7 @@ from .resolutiontree import ResolutionTree
 
 class ResourceData(object):
 
-    def __init__(self,rname,zone=None,recpool=None,is_implicit_in=None):
+    def __init__(self,rname,zone = None,recpool = None,is_implicit_in = None):
         """This represents a resource in a zone.  This resource may or may
         not be a 'root' node, meaning that it is not an implictitly managed
         cname.
@@ -41,19 +41,19 @@ class ResourceData(object):
         If a resource has distribution information, then the resolution trees are stored
         in the distributions hashmap.
         """
-        self._zone=zone
-        self._localname=undotify(rname)
-        self._recpool=recpool
-        if self._recpool==None:
-            self._recpool=RecordPool()
+        self._zone = zone
+        self._localname = undotify(rname)
+        self._recpool = recpool
+        if self._recpool == None:
+            self._recpool = RecordPool()
         self.rtree = None
-        self._non_balanced_records=RecordPool()
-        self._distributions={}
-        self.is_implicit_in=is_implicit_in
+        self._non_balanced_records = RecordPool()
+        self._distributions = {}
+        self.is_implicit_in = is_implicit_in
 
 
     def hasRecord(self,spec):
-        return self._recpool.contains(spec,matchPresence=True,matchSource=True)
+        return self._recpool.contains(spec,matchPresence = True,matchSource = True)
 
     def remove(self,spec):
         self._recpool.remove(spec)
@@ -66,9 +66,9 @@ class ResourceData(object):
 
     @property
     def isEmpty(self):
-        recs=self._recpool.selected_records(rdtype=RecordType.ANY,\
-                            presence=RecordSpec.PRESENT,source=None)
-        return len(list(recs))==0
+        recs = self._recpool.selected_records(rdtype = RecordType.ANY,\
+                            presence = RecordSpec.PRESENT,source = None)
+        return len(list(recs)) == 0
 
     @property
     def distributions(self):
@@ -76,13 +76,13 @@ class ResourceData(object):
 
     @property
     def present_records(self):
-        return self._recpool.selected_records(rdtype=RecordType.ANY,\
-                            presence=RecordSpec.PRESENT,source=None)
+        return self._recpool.selected_records(rdtype = RecordType.ANY,\
+                            presence = RecordSpec.PRESENT,source = None)
 
     def non_balanced_resolution_records(self):
-        a_records=self._non_balanced_records.selected_records(rdtype=RecordType.A)
-        aaaa_records=self._non_balanced_records.selected_records(rdtype=RecordType.AAAA)
-        cname_records=self._non_balanced_records.selected_records(rdtype=RecordType.CNAME)
+        a_records = self._non_balanced_records.selected_records(rdtype = RecordType.A)
+        aaaa_records = self._non_balanced_records.selected_records(rdtype = RecordType.AAAA)
+        cname_records = self._non_balanced_records.selected_records(rdtype = RecordType.CNAME)
         for reclist in [a_records,aaaa_records,cname_records]:
             for rec in reclist:
                 yield rec
@@ -101,7 +101,7 @@ class ResourceData(object):
         """Return true if this resource is the result of the implicit management
         of geo records
         """
-        return self.is_implicit_in!=None
+        return self.is_implicit_in != None
 
     @property
     def present_record_count(self):
@@ -176,13 +176,13 @@ class ResourceData(object):
 
         Currently
         """
-        rname=data['name']
+        rname = data['name']
 
-        self._non_balanced_records=RecordPool.from_json(data['non_balanced_records'])
+        self._non_balanced_records = RecordPool.from_json(data['non_balanced_records'])
         if data.get('distributions'):
-            self.rtree=ResolutionTree.from_json(data['rtree'])
-        if data.get('is_implicit_in')!=None:
-            self.is_implicit_in=zone.getResource(data['is_implicit_in'])
+            self.rtree = ResolutionTree.from_json(data['rtree'])
+        if data.get('is_implicit_in') != None:
+            self.is_implicit_in = zone.getResource(data['is_implicit_in'])
     @classmethod
     def from_json(cls,data):
         """
@@ -191,23 +191,23 @@ class ResourceData(object):
         The zone may be None, in the case of deserializing a resource data object in a
         stand alone context.
         """
-        rd=ResourceData(data['name'])
+        rd = ResourceData(data['name'])
         rd.fill_in_from_json(None,data)
         return rd
 
     def delta(self,other):
         assert isinstance(other,ResourceData)
-        pool=RecordPool.from_records(list(self.non_balanced_records),source="origin")
+        pool = RecordPool.from_records(list(self.non_balanced_records),source = "origin")
         for rec in other.non_balanced_records:
             pool.add(rec)
-        simple_delta=pool.assess("origin")
+        simple_delta = pool.assess("origin")
 
-        dist_schemes=set(self._distributions.values())
-        other_dist_schemes=set(other._distributions.values())
-        missing_dist_schemes=dist_schemes-other_dist_schemes
-        overpresent_dist_schemes=other_dist_schemes-dist_schemes
+        dist_schemes = set(self._distributions.values())
+        other_dist_schemes = set(other._distributions.values())
+        missing_dist_schemes = dist_schemes-other_dist_schemes
+        overpresent_dist_schemes = other_dist_schemes-dist_schemes
 
-        delta={
+        delta = {
             'nbr':simple_delta,
             'dist':{
                 'missing':list(missing_dist_schemes),
@@ -227,15 +227,15 @@ class ZoneData(object):
     """
     """
 
-    def __init__(self,fqdn=None,source=None,vendor=None):
+    def __init__(self,fqdn = None,source = None,vendor = None):
         """Create an empty zone model
         """
-        self._nameservers=set()
-        self._soa=None
-        self._fqdn=fqdn
-        self._resources={}
-        self._source=source
-        self._vendor=vendor
+        self._nameservers = set()
+        self._soa = None
+        self._fqdn = fqdn
+        self._resources = {}
+        self._source = source
+        self._vendor = vendor
 
     def _local_rname(self,rname):
         """Return the local name of a resource, checking to see if it is part
@@ -249,7 +249,7 @@ class ZoneData(object):
                 raise IncorrectlyQualifiedResourceName(rname,self.fqdn)
 
             # otherwise just trim rname to be the local name, sans zone
-            rname=rname[:-len(self.fqdn)]
+            rname = rname[:-len(self.fqdn)]
         return rname
 
     def _full_rname_or_addr(self,name):
@@ -269,7 +269,7 @@ class ZoneData(object):
         zone.
         """
         if isinstance(rname,ResourceData):
-            rname=rname.name
+            rname = rname.name
 
         if rname.endswith("."):
             # this is fully qualified, check that zones match, and if
@@ -277,7 +277,7 @@ class ZoneData(object):
             if not rname.endswith(self.fqdn):
                 return False
 
-        return self._resources.get(self._local_rname(rname))!=None
+        return self._resources.get(self._local_rname(rname)) != None
 
     def getResource(self,rname):
         """
@@ -319,19 +319,19 @@ class ZoneData(object):
             if not rname.endswith(self.fqdn):
                 raise IncorrectZoneScope(rname)
 
-        rd=self._resources.get(self._local_rname(rname))
-        if rd==None:
-            rd=ResourceData(rname,self)
-            self._resources[rname]=rd
+        rd = self._resources.get(self._local_rname(rname))
+        if rd == None:
+            rd = ResourceData(rname,self)
+            self._resources[rname] = rd
 
-        if spec_or_set.rdtype==RecordType.NS:
+        if spec_or_set.rdtype == RecordType.NS:
             if isinstance(spec_or_set,RecordSpec):
                 self._nameservers.add(self._full_rname_or_addr(spec_or_set.rdata))
             else:
                 for rec in spec_or_set:
                     self._nameservers.add(self._full_rname_or_addr(rec.rdata))
-        elif spec_or_set.rdtype==RecordType.SOA:
-            self._soa=spec_or_set
+        elif spec_or_set.rdtype == RecordType.SOA:
+            self._soa = spec_or_set
             self._nameservers.add(self._full_rname_or_addr(self.soa_nameserver_fqdn))
 
         rd.add(spec_or_set)
@@ -352,19 +352,19 @@ class ZoneData(object):
             if not rname.endswith(self.fqdn):
                 raise IncorrectZoneScope(rname)
 
-        rd=self._resources.get(self._local_rname(rname))
-        if rd==None:
-            rd=ResourceData(rname,self)
-            self._resources[rname]=rd
+        rd = self._resources.get(self._local_rname(rname))
+        if rd == None:
+            rd = ResourceData(rname,self)
+            self._resources[rname] = rd
 
-        if spec_or_set.rdtype==RecordType.NS:
+        if spec_or_set.rdtype == RecordType.NS:
             if isinstance(spec_or_set,RecordSpec):
                 self._nameservers.add(self._full_rname_or_addr(spec_or_set.rdata))
             else:
                 for rec in spec_or_set:
                     self._nameservers.add(self._full_rname_or_addr(rec.rdata))
-        elif spec_or_set.rdtype==RecordType.SOA:
-            self._soa=spec_or_set
+        elif spec_or_set.rdtype == RecordType.SOA:
+            self._soa = spec_or_set
             self._nameservers.add(self._full_rname_or_addr(self.soa_nameserver_fqdn))
 
         #print("ATTACHING:",spec_or_set.presence,rname,spec_or_set)
@@ -372,7 +372,7 @@ class ZoneData(object):
 
     @classmethod
     def is_valid_zone_fqdn(cls,zone_fqdn):
-        if zone_fqdn==None:
+        if zone_fqdn == None:
             return False
         return zone_fqdn.endswith(".")
 
@@ -384,11 +384,11 @@ class ZoneData(object):
         """
         Create a :class:`ZoneData` object from a dict.
         """
-        zd=ZoneData()
+        zd = ZoneData()
 
-        zd._fqdn=jsondata.get('fqdn')
-        if zd._fqdn==None:
-            zd._fqdn=jsondata.get('name')
+        zd._fqdn = jsondata.get('fqdn')
+        if zd._fqdn == None:
+            zd._fqdn = jsondata.get('name')
         if not cls.is_valid_zone_fqdn(zd._fqdn):
             raise InvalidZoneFQDNException(zd._fqdn)
 
@@ -401,7 +401,7 @@ class ZoneData(object):
             records = resource_json.get('records')
             if records != None:
                 for r in records:
-                    zd.attachResourceData(rname,RecordSpec(json=r))
+                    zd.attachResourceData(rname,RecordSpec(json = r))
 
             rtree = resource_json.get('rtree')
             if rtree != None:
@@ -423,7 +423,7 @@ class ZoneData(object):
         """Load a ZoneData object from json as a text
         """
         try:
-            jsondata=json.loads(jsontext)
+            jsondata = json.loads(jsontext)
         except Exception as E:
             raise MalformedJsonZoneData(E)
         return cls.from_json(jsondata)
@@ -437,7 +437,7 @@ class ZoneData(object):
         Example::
 
             >>> from hyperdns.netdns import *
-            example_com_zonefile='''
+            example_com_zonefile = '''
             $TTL 36000
             $ORIGIN example1.com.
             example1.com. IN      SOA     ns1.example1.com. hostmaster.example1.com. (
@@ -458,7 +458,7 @@ class ZoneData(object):
             mail2.example1.com.      86400   A       192.168.2.20
             www2.example1.com.       86400   A    192.168.10.20
             www.example1.com.        86400 CNAME     example1.com.
-            ftp.example1.c>>> example_com_zonefile='''
+            ftp.example1.c>>> example_com_zonefile = '''
             ... $TTL 36000
             ... $ORIGIN example1.com.
             ... example1.com. IN      SOA     ns1.example1.com. hostmaster.example1.com. (
@@ -482,7 +482,7 @@ class ZoneData(object):
             ... ftp.example1.com.        86400 CNAME     example1.com.
             ... webmail.example1.com.    86400 CNAME     example1.com.
             ... '''
-            >>> zone=ZoneData.fromZonefileText(example_com_zonefile)
+            >>> zone = ZoneData.fromZonefileText(example_com_zonefile)
             >>> for resource in zone.resources:
             ...     print(resource.name,len(list(resource.records)))
             ...
@@ -499,24 +499,24 @@ class ZoneData(object):
 
         """
         try:
-            pyzone = dns.zone.from_text(zone_text,check_origin=False);
+            pyzone = dns.zone.from_text(zone_text,check_origin = False);
         except dns.zone.UnknownOrigin:
             raise CorruptBindFile()
 
-        zonename=dotify(pyzone.origin.to_text()).lower()
-        zd=ZoneData()
-        zd._fqdn=zonename
-        zd._resources={}
+        zonename = dotify(pyzone.origin.to_text()).lower()
+        zd = ZoneData()
+        zd._fqdn = zonename
+        zd._resources = {}
 
-        resources=zd._resources
+        resources = zd._resources
         for key, r in pyzone.items():
             for rdataset in r:
                 rdtype = rdataset.rdtype
                 rdclass = rdataset.rdclass
                 ttl = rdataset.ttl
                 for record in rdataset:
-                    rdata=record.to_text()
-                    spec=RecordSpec(rdtype=rdtype,rdclass=rdclass,ttl=ttl,rdata=rdata)
+                    rdata = record.to_text()
+                    spec = RecordSpec(rdtype = rdtype,rdclass = rdclass,ttl = ttl,rdata = rdata)
                     zd.addResourceData(key.to_unicode(),spec)
 
         return zd
@@ -530,7 +530,7 @@ class ZoneData(object):
 
         Example::
 
-            >>> zonedata=ZoneData(fqdn='zone1.com.')
+            >>> zonedata = ZoneData(fqdn = 'zone1.com.')
             >>> print(zonedata.zonefile)
             $ORIGIN zone1.com.
 
@@ -544,7 +544,7 @@ class ZoneData(object):
         :returns: A BIND format zonefile for this zone
         :rtype: string
         """
-        origin=dns.name.Name(self.fqdn.split('.')[:-1])
+        origin = dns.name.Name(self.fqdn.split('.')[:-1])
         pyzone = dns.zone.Zone(origin)
 
         for resource in self.resources:
@@ -553,12 +553,12 @@ class ZoneData(object):
                 rdtype = r['type'] #rd_type_as_int(r['type'])
                 #stuff = ' '.join([str(x) for x in r[]])
                 rdata = dns.rdata.from_text(RecordClass.IN, rdtype, r['rdata'])
-                n = pyzone.get_rdataset(resource.name, rdtype, create=True)
-                n.ttl=r['ttl']
+                n = pyzone.get_rdataset(resource.name, rdtype, create = True)
+                n.ttl = r['ttl']
                 n.add(rdata)
 
-        output=io.StringIO()
-        pyzone.to_file(output,sorted=True)
+        output = io.StringIO()
+        pyzone.to_file(output,sorted = True)
         return "$ORIGIN %s\n%s" % (self.fqdn,output.getvalue())
 
     # zone fqdn, including trailinig dot, lowercased, and validated against
@@ -596,7 +596,7 @@ class ZoneData(object):
         or may not be within this zone - see soa_nameserver_is_internal() to check
         if this nameserver is internal
         """
-        if self._soa==None:
+        if self._soa == None:
             return None
         return self._soa.soa_nameserver_fqdn
 
@@ -607,7 +607,7 @@ class ZoneData(object):
         provides the soa email as an actual email address, with all parsing and substitution
         completed.
         """
-        if self._soa==None:
+        if self._soa == None:
             return None
         return self._soa.soa_email
 
@@ -615,7 +615,7 @@ class ZoneData(object):
     def soa_serial(self):
         """Serial number - 2004123001 - This is a sort of a revision numbering system to show the changes made to the DNS Zone. This number has to increment , whenever any change is made to the Zone file. The standard convention is to use the date of update YYYYMMDDnn, where nn is a revision number in case more than one updates are done in a day. So if the first update done today would be 2005301200 and second update would be 2005301201.
         """
-        if self._soa==None:
+        if self._soa == None:
             return None
         return self._soa.soa_serial
 
@@ -623,7 +623,7 @@ class ZoneData(object):
     def soa_refresh(self):
         """Refresh - 86000 - This is time(in seconds) when the slave DNS server will refresh from the master. This value represents how often a secondary will poll the primary server to see if the serial number for the zone has increased (so it knows to request a new copy of the data for the zone). It can be written as ``23h88M'' indicating 23 hours and 88 minutes. If you have a regular Internet server, you can keep it between 6 to 24 hours.
         """
-        if self._soa==None:
+        if self._soa == None:
             return None
         return self._soa.soa_refresh
 
@@ -631,7 +631,7 @@ class ZoneData(object):
     def soa_retry(self):
         """Retry - 7200 - Now assume that a slave tried to contact the master server and failed to contact it because it was down. The Retry value (time in seconds) will tell it when to get back. This value is not very important and can be a fraction of the refresh value.
         """
-        if self._soa==None:
+        if self._soa == None:
             return None
         return self._soa.soa_retry
 
@@ -639,7 +639,7 @@ class ZoneData(object):
     def soa_expiry(self):
         """Expiry - 1209600 - This is the time (in seconds) that a slave server will keep a cached zone file as valid, if it can't contact the primary server. If this value were set to say 2 weeks ( in seconds), what it means is that a slave would still be able to give out domain information from its cached zone file for 2 weeks, without anyone knowing the difference. The recommended value is between 2 to 4 weeks.
         """
-        if self._soa==None:
+        if self._soa == None:
             return None
         return self._soa.soa_expire
 
@@ -647,7 +647,7 @@ class ZoneData(object):
     def soa_minimum(self):
         """Minimum - 600 - This is the default time(in seconds) that the slave servers should cache the Zone file. This is the most important time field in the SOA Record. If your DNS information keeps changing, keep it down to a day or less. Otherwise if your DNS record doesn't change regularly, step it up between 1 to 5 days. The benefit of keeping this value high, is that your website speeds increase drastically as a result of reduced lookups. Caching servers around the globe would cache your records and this improves site performance.
         """
-        if self._soa==None:
+        if self._soa == None:
             return None
         return self._soa.soa_minttl
 

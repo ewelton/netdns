@@ -22,8 +22,8 @@ def purepath(rp):
 # extract the version from the local file version.txt
 version = 'unknown'
 with open(purepath('version.txt')) as file:
-    version=file.read()
-version=version.strip()
+    version = file.read()
+version = version.strip()
 
 # what is our documentation location
 github = 'http://hyperdns.github.io/netdns'
@@ -49,11 +49,11 @@ kwargs = {
     'scripts':[],
     'entry_points': '''
         [console_scripts]
-        dq=hyperdns.netdns.cli:query
-        dx=hyperdns.netdns.cli:xlate
-        ds=hyperdns.netdns.cli:serve
-        dm=hyperdns.netdns.cli:merge
-        dv=hyperdns.netdns.cli:validate
+        dq = hyperdns.netdns.cli:query
+        dx = hyperdns.netdns.cli:xlate
+        ds = hyperdns.netdns.cli:serve
+        dm = hyperdns.netdns.cli:merge
+        dv = hyperdns.netdns.cli:validate
     ''',
     'version' : version,
     'long_description' : description,

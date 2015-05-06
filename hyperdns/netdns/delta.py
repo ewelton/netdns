@@ -8,7 +8,7 @@ def rtree_delta(tree1,tree2):
         assert isinstance(msg,str)
         messages.append(msg)
 
-    def gen_delta(node1,node2,indent=''):
+    def gen_delta(node1,node2,indent = ''):
         if node1 == None and node2 == None:
             return
 
@@ -159,7 +159,7 @@ def rtree_delta(tree1,tree2):
         raise ValueError('Case is not covered (this should not happen) - %s and %s'%(
                          node1.__class__.__name__,node2.__class__.__name__))
 
-    def gen_delta_records(node1,node2,indent=''):
+    def gen_delta_records(node1,node2,indent = ''):
         records1 = node1.all_records if node1 != None else frozenset()
         records2 = node2.all_records if node2 != None else frozenset()
 

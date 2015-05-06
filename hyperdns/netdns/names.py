@@ -17,11 +17,11 @@ def undotify(name):
 
 
 def is_valid_zone_fqdn(zone_fqdn):
-    if zone_fqdn==None:
+    if zone_fqdn == None:
         return False
     return zone_fqdn.endswith(".")
 
-def fqdn(name,zone=None):
+def fqdn(name,zone = None):
     """ This produces a string version of a name that is dot terminated
         and ends with the trailing zone.  If the name already ends with
         the zone name, it is not appended.  For example
@@ -38,18 +38,18 @@ def fqdn(name,zone=None):
     # ensure trailing dot
     if not name.endswith('.'):
         # add zone if required, ensuring dot
-        if zone==None:
-            name+='.'
+        if zone == None:
+            name += '.'
         else:
             if not zone.endswith('.'):
                 if name.endswith(zone):
-                    name=name+'.'
+                    name = name+'.'
                 else:
-                    name=name+'.'+zone+'.'
+                    name = name+'.'+zone+'.'
             else:
-                name+='.'
+                name += '.'
                 if not name.endswith(zone):
-                    name=name+zone
+                    name = name+zone
 
     return name
 
@@ -274,7 +274,7 @@ class NodeName(object):
         return len(b'.'.join(self.label))
 
 
-    def decode_name(self,last=-1):
+    def decode_name(self,last = -1):
         """
             Decode label at current offset in buffer (following pointers
             to cached elements where necessary)
@@ -289,13 +289,13 @@ class NodeName(object):
                 pointer = get_bits(self.unpack("!H")[0],0,14)
                 save = self.offset
                 if last == save:
-                    raise BufferError("Recursive pointer in NodeName [offset=%d,pointer=%d,length=%d]" %
+                    raise BufferError("Recursive pointer in NodeName [offset = %d,pointer = %d,length = %d]" %
                             (self.offset,pointer,len(self.data)))
                 if pointer < self.offset:
                     self.offset = pointer
                 else:
                     # Pointer can't point forwards
-                    raise BufferError("Invalid pointer in NodeName [offset=%d,pointer=%d,length=%d]" %
+                    raise BufferError("Invalid pointer in NodeName [offset = %d,pointer = %d,length = %d]" %
                             (self.offset,pointer,len(self.data)))
                 label.extend(self.decode_name(save).label)
                 self.offset = save
