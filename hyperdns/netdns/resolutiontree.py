@@ -7,6 +7,161 @@ from .recordclass import RecordClass
 import sys
 import abc
 
+class PrintVisitor(object):
+    """
+    """
+    def __init__(self,file = sys.stdout):
+        self.file = file
+
+    def print_node(self,node,indent = '',prefix = '',suffix = ''):
+        if isinstance(node,GeoNode):
+            self._print_geo_node(node,indent,prefix,suffix)
+        elif isinstance(node,WeightedNode):
+            self._print_weighted_node(node,indent,prefix,suffix)
+        elif isinstance(node,RecordGroupNode):
+            self._print_record_set_node(node,indent,prefix,suffix)
+        elif isinstance(node,RecordNode):
+            self._print_record_node(node,indent,prefix,suffix)
+        else:
+            raise Exception('Unknown %s' % node.__class__.__name__)
+
+    def _print_weighted_node(self,node,indent = '',prefix = '',suffix = ''):
+        print('%s%sWeighted%s'%(indent,prefix,suffix),file = self.file)
+        for entry in node.entries:
+            csuffix = ' (weight %2.1f%%)'%(100*entry.weight)
+            if entry.cname != None:
+                csuffix += '; '+str(RecordNode(entry.cname))
+            self.print_node(entry.child,indent = indent+'    ',
+                              prefix = 'Group %d: '%(entry.index+1),
+                              suffix = csuffix
+                              )
+    def _print_geo_node(self,node,indent = '',prefix = '',suffix = ''):
+        print('%s%sGeo%s'%(indent,prefix,suffix),file = self.file)
+        for key in sorted(node.entries.keys()):
+            entry = node.entries[key]
+            if entry.cname == None:
+                csuffix = ''
+            else:
+                csuffix = '; '+str(RecordNode(entry.cname))
+            self.print_node(entry.child,indent = indent+'    ',
+                              prefix = 'Region "%s": '%(key),
+                              suffix = csuffix)
+
+    def _print_record_set_node(self,node,indent = '',prefix = '',suffix = ''):
+        print('%s%sRecordSet%s'%(indent,prefix,suffix),file = self.file)
+        for e in node.entries:
+            self.print_node(e,indent = indent+'    ')
+
+    def _print_record_node(self,node,indent = '',prefix = '',suffix = ''):
+        print('%s%sRecord %s%s'%(indent,prefix,node,suffix),file = self.file)
+
+class PolicyPathElt(object):
+    """A Policy Path Elt contains a segment in the auto-generated label, the policy style
+    for the node that contains it, and then the qualifications for that routing policy (which
+    come from the indices of the node's entry map)
+
+
+    Geo and Weighted Nodes contribute to the routing policy structure, and those are the only
+    two Node types that have intermediary Entry elements.  RecordGroupNode and RecordNode
+
+        Node
+            - routing policy
+            - map w/ keys defining the 'info' field which configures the routing policy
+
+        Example:
+
+            Node/Entry Tree                     Path as (label,policy,info)
+                Geo
+                    <info1>                     (<info1>,Geo,<region-codes1>)
+                        Weighted
+                            <g1>                (<info1>,Geo,<region-codes1>),(<g1>,Weighted,<weight1>)
+                                <rsn>
+                                    <r1>
+                                    <r2>
+                            <g2>                (<info1>,Geo,<region-codes1>),(<g2>,Weighted,<weight2>)
+                                <r3>
+                    <info2>                     (<info2>,Geo,<region-codes2>)
+                        <rsn>
+                            <r4>
+                            <r5>
+                    <info3>                     (<info3>,Geo,<region-codes2>)
+                        <r6>
+    """
+    def __init__(self,label = None,policy = None,info = None):
+        self.label = label
+        self.policy = policy
+        self.info = info
+
+class PolicyMapBuilder(object):
+    """
+    For the above configuration, the maps would be
+
+    PolicyMap
+        <info1>-<g1> - (Geo,<region-codes1>),(Weighted,<weight1>)
+        <info1>-<g2> - (Geo,<region-codes1>),(Weighted,<weight2>)
+        <info2>      - (Geo,<region-codes2>)
+        <info3>      - (Geo,<region-codes3>)
+
+    RecordMap
+        <info1>-<g1> - [<r1>,<r2>]
+        <info1>-<g2> - [<r3>]
+        <info2>      - [<r4>,<r5>]
+        <info3>      - [<r6>]
+
+    """
+    def __init__(self,node):
+        self.rmap = {}
+        self.pmap = {}
+        self.map_node(node,[])
+
+    def map_node(self,node,path):
+        if isinstance(node,GeoNode):
+            self.map_geo_node(node,path)
+        elif isinstance(node,WeightedNode):
+            self.map_weighted_node(node,path)
+        elif isinstance(node,RecordGroupNode):
+            self.map_record_set_node(node,path)
+        elif isinstance(node,RecordNode):
+            self.map_record_node(node,path)
+        else:
+            raise Exception('Unknown %s' % node.__class__.__name__)
+
+    def map_geo_node(self,node,path):
+        for region_codes in sorted(node.entries.keys()):
+            entry = node.entries[region_codes]
+            new_path = [p for p in path]
+            new_path.append(PolicyPathElt(
+                label = region_codes.key,
+                policy = node.policy_style,
+                info = region_codes
+            ))
+            self.map_node(entry.child,new_path)
+
+    def map_weighted_node(self,node,path):
+        """For a Weighted node, each element is a WeightedEntry, which contains an index, a weight,
+        a pointer to a RoutingPolicyTree
+        """
+        for entry in node.entries:
+            w = (100*entry.weight)
+            new_path = [p for p in path]
+            new_path.append(PolicyPathElt(
+                label = '%d' % entry.index,
+                policy = node.policy_style,
+                info = (100*entry.weight)
+            ))
+            self.map_node(entry.child,new_path)
+
+    def map_record_set_node(self,node,path):
+        for e in node.entries:
+            self.map_node(e,path)
+
+    def map_record_node(self,node,path):
+        key = "-".join([p.label for p in path])
+        node.record._policy_group = key
+        self.rmap.setdefault(key,[]).append(node.record)
+        if self.pmap.get(key) == None:
+            self.pmap[key] = [(p.policy,p.info) for p in path]
+
 class RoutingPolicyEntry:
     """A RoutingPolicyEntry represents a specific decision within the parent
     routing policy node.
@@ -198,18 +353,6 @@ class GeoNode(RoutingPolicyNode):
             result['members'].append(member)
         return result
 
-    def print(self,indent = '',prefix = '',suffix = '',file = sys.stdout):
-        print('%s%sGeo%s'%(indent,prefix,suffix),file = file)
-        for key in sorted(self.entries.keys()):
-            entry = self.entries[key]
-            if entry.cname == None:
-                csuffix = ''
-            else:
-                csuffix = '; '+str(RecordNode(entry.cname))
-            entry.child.print(indent = indent+'    ',
-                              prefix = 'Region "%s": '%(key),
-                              suffix = csuffix,
-                              file = file)
 
 
 
@@ -287,17 +430,6 @@ class WeightedNode(RoutingPolicyNode):
         return (isinstance(other,WeightedNode) and
                 other.entries == self.entries)
 
-    def print(self,indent = '',prefix = '',suffix = '',file = sys.stdout):
-        print('%s%sWeighted%s'%(indent,prefix,suffix),file = file)
-        for entry in self.entries:
-            csuffix = ' (weight %2.1f%%)'%(100*entry.weight)
-            if entry.cname != None:
-                csuffix += '; '+str(RecordNode(entry.cname))
-            entry.child.print(indent = indent+'    ',
-                              prefix = 'Group %d: '%(entry.index+1),
-                              suffix = csuffix,
-                              file = file)
-
     def to_json(self):
         result = { 'kind': self.policy_style,
                    'members': [] }
@@ -350,10 +482,6 @@ class RecordGroupNode(RoutingPolicyNode):
         return (isinstance(other,RecordGroupNode) and
                 other.entries == self.entries)
 
-    def print(self,indent = '',prefix = '',suffix = '',file = sys.stdout):
-        print('%s%sRecordSet%s'%(indent,prefix,suffix),file = file)
-        for e in self.entries:
-            e.print(indent+'    ',file = file)
 
     def to_json(self):
         return { 'kind': self.policy_style,
@@ -402,8 +530,6 @@ class RecordNode(RoutingPolicyNode):
         rdata = self.record.rdata
         return '%d %s %s %s'%(ttl,rdclass,rdtype,rdata)
 
-    def print(self,indent = '',prefix = '',suffix = '',file = sys.stdout):
-        print('%s%sRecord %s%s'%(indent,prefix,self,suffix),file = file)
 
     def to_json(self):
         return { 'kind': self.policy_style,
@@ -488,7 +614,11 @@ class ResolutionTree:
         if self.root == None:
             print('%sEmpty'%(indent),file = file)
         else:
-            self.root.print(indent = indent,file = file)
+            visitor = PrintVisitor(file)
+            visitor.print_node(self.root,indent = indent)
+
+    def build_record_map(self):
+        return PolicyMapBuilder(self.root)
 
     @property
     def referenced_cnames(self):
