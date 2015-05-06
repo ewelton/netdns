@@ -19,7 +19,7 @@ from .resolutiontree import ResolutionTree
 
 class ResourceData(object):
     
-    def __init__(self,rname,zone,recpool=None):
+    def __init__(self,rname,zone=None,recpool=None,is_implicit_in=None):
         """This represents a resource in a zone.  This resource may or may
         not be a 'root' node, meaning that it is not an implictitly managed
         cname.
@@ -47,6 +47,9 @@ class ResourceData(object):
         if self._recpool==None:
             self._recpool=RecordPool()
         self.rtree = None
+        self._non_balanced_records=RecordPool()
+        self._distributions={}
+        self.is_implicit_in=is_implicit_in
         
     
     def hasRecord(self,spec):
@@ -68,9 +71,38 @@ class ResourceData(object):
         return len(list(recs))==0
 
     @property
+    def distributions(self):
+        return self._distributions
+        
+    @property
     def present_records(self):
         return self._recpool.selected_records(rdtype=RecordType.ANY,\
                             presence=RecordSpec.PRESENT,source=None)
+
+    def non_balanced_resolution_records(self):
+        a_records=self._non_balanced_records.selected_records(rdtype=RecordType.A)
+        aaaa_records=self._non_balanced_records.selected_records(rdtype=RecordType.AAAA)
+        cname_records=self._non_balanced_records.selected_records(rdtype=RecordType.CNAME)
+        for reclist in [a_records,aaaa_records,cname_records]:
+            for rec in reclist:
+                yield rec
+        
+    @property
+    def non_balanced_record_pool(self):
+        return self._non_balanced_records
+        
+    def add_record(self,entry):
+        #print("ADDING NON BALANCED ENTRY:",entry)
+        self._non_balanced_records.add(entry)
+        #print("NBR",self._non_balanced_records.to_json())
+        
+    @property
+    def is_implicit(self):
+        """Return true if this resource is the result of the implicit management
+        of geo records
+        """
+        return self.is_implicit_in!=None
+
     @property
     def present_record_count(self):
         return len(list(self.present_records))
@@ -78,6 +110,12 @@ class ResourceData(object):
     @property
     def records(self):
         return self._recpool.records
+        
+
+    @property
+    def non_balanced_records(self):
+        for record in self._non_balanced_records.records:
+            yield record
         
     @property
     def zone(self):
@@ -126,10 +164,65 @@ class ResourceData(object):
                 records.append(rec.to_json())
             result['records'] = records
         return result
-        
-        
 
+    def fill_in_from_json(self,zone,data):
+        """
+        Rebuild this resource from the provided data.
         
+        This is slightly different from the other forms of deserialization, because we
+        need to have elements in place and linked to their names in the zone prior to
+        unpacking the specific data elements - this is due to the 'implicit_in' link, which
+        may be cyclic.
+        
+        Currently
+        """
+        rname=data['name']
+        
+        self._non_balanced_records=RecordPool.from_json(data['non_balanced_records'])
+        if data.get('distributions'):
+            self.rtree=ResolutionTree.from_json(data['rtree'])
+        if data.get('is_implicit_in')!=None:
+            self.is_implicit_in=zone.getResource(data['is_implicit_in'])
+    @classmethod
+    def from_json(cls,data):
+        """
+        Take a json representation and return a resource data object and fill in the data.
+        
+        The zone may be None, in the case of deserializing a resource data object in a
+        stand alone context.
+        """
+        rd=ResourceData(data['name'])
+        rd.fill_in_from_json(None,data)
+        return rd
+        
+    def delta(self,other):
+        assert isinstance(other,ResourceData)
+        pool=RecordPool.from_records(list(self.non_balanced_records),source="origin")
+        for rec in other.non_balanced_records:
+            pool.add(rec)
+        simple_delta=pool.assess("origin")
+        
+        dist_schemes=set(self._distributions.values())
+        other_dist_schemes=set(other._distributions.values())
+        missing_dist_schemes=dist_schemes-other_dist_schemes
+        overpresent_dist_schemes=other_dist_schemes-dist_schemes
+
+        delta={
+            'nbr':simple_delta,
+            'dist':{
+                'missing':list(missing_dist_schemes),
+                'overpresent':list(missing_dist_schemes)
+            }
+        }
+        return delta
+    
+    def remove_non_balanced_record(self,record):
+        self._non_balanced_records.remove(record)
+        
+    @property
+    def is_empty(self):
+        return False
+
 class ZoneData(object):
     """
     """
@@ -284,6 +377,8 @@ class ZoneData(object):
         return zone_fqdn.endswith(".")       
 
 
+
+        
     @classmethod
     def from_json(cls,jsondata):
         """
