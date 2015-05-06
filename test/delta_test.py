@@ -2,7 +2,7 @@
 
 from hyperdns.netdns.model import ZoneData
 from hyperdns.netdns.resolutiontree import ResolutionTree
-from hyperdns.netdns.delta import rtree_delta
+from hyperdns.netdns.delta import describe_rtree_delta
 import os
 import re
 import json
@@ -45,7 +45,7 @@ for base in base_names:
         expected_output = [re.sub('\n$','',line) for line in f.readlines()]
 
     try:
-        actual_output = rtree_delta(before_tree,after_tree)
+        actual_output = describe_rtree_delta(before_tree,after_tree)
         if expected_output == actual_output:
             print('%-40s PASS'%(base))
         else:
