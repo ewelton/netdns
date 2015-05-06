@@ -13,13 +13,13 @@ from hyperdns.netdns import (
     MalformedSOAEmail,
     MalformedPresence
     )
-    
+
 
 class RecordSpec(object):
     """ This utility class represents the core information about a record
     as a python object as well as a dict and a json object.  It encapsulates
     four core properties::
-    
+
         rdclass     spec.rdclass    spec['class']   Resource Data Class
         rdtype      spec.rdtype     spec['type']    Resource Data Type
         rdata       spec.rdata      spec['rdata']   Resource Data
@@ -40,10 +40,10 @@ class RecordSpec(object):
 
     TTL can be set using either number value (in seconds) or from a string
     using a BIND-notation such as 1w3d2m
-        
+
     In addition, for certain record types, additional properties are exposed
     such as the mx_priority for an MX record.
-        
+
     """
 
 
@@ -54,15 +54,15 @@ class RecordSpec(object):
     ABSENT='absent'
     """ Indicates that a given record spec should be absent
     """
-    
+
     ANY_PRESENCE='unimportant'
     """ Indicates that presence is unimportant.  This is used mostly
     by other classes that need to express the difference between
     caring about presence and not caring about presence without using
     a semantically confusing convention like presence=None
     """
-    
-    
+
+
     def __init__(self,
                 json=None,
                 ttl=None,rdata=None,rdtype=None,rdclass=RecordClass.IN,
@@ -74,7 +74,7 @@ class RecordSpec(object):
         """
         if present!=None and absent!=None:
             raise MalformedPresence("Only present or absent keyword can be present")
-        
+
         if present==None and absent==None and presence==None:
             presence=self.PRESENT
             present=True
@@ -88,13 +88,13 @@ class RecordSpec(object):
 
         if present!=None and present==absent:
             raise MalformedPresence("Can not be both present and absent")
-        
+
         # record the presence and source value
         self._presence=presence
         self._source=source
         # these values are calculated on demand and cached
         self._key=None
-        self._hash=None            
+        self._hash=None
 
         def _set_rdclass(self,value):
             """Internal setter for record class value
@@ -115,7 +115,7 @@ class RecordSpec(object):
                 rdata=value.get('rdata')
                 rdtype=value.get('type')
                 rdclass=value.get('class',RecordClass.IN)
-                
+
                 # these two fields are optional
                 self._presence=value.get('presence',self._presence)
                 self._source=value.get('source',self._source)
@@ -136,23 +136,23 @@ class RecordSpec(object):
                 print(E)
                 #raise MalformedRecordException()
                 raise E
-            
-        
+
+
         def _set_ttl(self,value):
             """Assign a ttl value as integer or BIND 8 units.
-        
+
             Example:
                  spec.ttl=200
                  spec.ttl='1w3m'
 
-            @raises MalformedTTLException: the TTL is not well-formed 
-            @rtype: int 
+            @raises MalformedTTLException: the TTL is not well-formed
+            @rtype: int
             """
             if isinstance(value,int):
                 newval=value
             else:
                 value=str(value).strip().lower()
-                if value.isdigit(): 
+                if value.isdigit():
                     newval = int(value)
                 else:
                     if not value[0].isdigit():
@@ -173,25 +173,25 @@ class RecordSpec(object):
                             factor=factors.get(c)
                             if factor==None:
                                 raise MalformedTTLException("unknown unit '%s'" % c)
-                            
+
                             newval = newval + current * factor
                             current = 0
                     if current != 0:
                         raise MalformedTTLException('BIND8 TTLs must end in units')
-            # final check before assignment    
-            if newval < 0 or newval > 2147483647: 
-                raise MalformedTTLException("TTL should be between 0 and 2^31 - 1 (inclusive), not %s" % newval) 
+            # final check before assignment
+            if newval < 0 or newval > 2147483647:
+                raise MalformedTTLException("TTL should be between 0 and 2^31 - 1 (inclusive), not %s" % newval)
             self._ttl=newval
-            return self._ttl        
+            return self._ttl
 
         def _set_mx_priority(self,value):
             """Set the mx_priority of this record, if the record is of type MX.
             If the record is not of type MX, then and exception is raised.  If
             this is an MX record, then the mx_priority value must be between 0
             and 65535.
-        
+
             :raises OnlyMXRecordsHaveMXFields: if this is not an mx record
-            """            
+            """
             if self.rdtype!=RecordType.MX:
                 raise OnlyMXRecordsHaveMXFields()
             # @todo, validate
@@ -200,19 +200,19 @@ class RecordSpec(object):
                 raise InvalidMXPriority()
             self._mx_priority=int(value)
             return self._mx_priority
-            
+
         def _set_mx_exchange(self,value):
             """Set the mx_exchange of this record, if the record is of type MX.
-            If the record is not of type MX, then and exception is raised.  
-        
+            If the record is not of type MX, then and exception is raised.
+
             :raises OnlyMXRecordsHaveMXFields: if this is not an mx record
-            """            
+            """
             if self.rdtype!=RecordType.MX:
                 raise OnlyMXRecordsHaveMXFields()
             # @todo, validate
             self._mx_exchange=value
             return self._mx_exchange
- 
+
         def _validate_and_set_SOA(self,rdata):
             """This is called when we're setting the rdata for a SOA record.
 
@@ -226,7 +226,7 @@ class RecordSpec(object):
             parts=rdata.split(" ")
             if len(parts)!=7:
                 raise MalformedSOARecord(rdata)
-        
+
             self._soa_ns=parts[0]
             _email=parts[1]
             #print("EMAIL:",_email)
@@ -236,22 +236,22 @@ class RecordSpec(object):
                     _email2=[_email2[0],"self.fqdn"]
                 else:
                     raise MalformedSOAEmail(rdata)
-        
+
             self._soa_email="%s@%s" % (_email2[0],_email2[1])
             self._soa_serial=parts[2]
             self._soa_refresh=parts[3]
             self._soa_retry=parts[4]
             self._soa_expire=parts[5]
             self._soa_minttl=parts[6]
-        
+
             return True
 
         def _set_rdata(self,value):
             """Set rdata according to record type.
-        
+
             :returns: rdata
             :raises: MalformedRecordException if the rdata is not correct for the
-                     record type.                 
+                     record type.
             """
             try:
                 if self.rdtype==RecordType.A:
@@ -292,25 +292,25 @@ class RecordSpec(object):
             return newtype
 
 
-                
 
-        
+
+
         if json!=None:
             _set_from_json(self,json)
         else:
             if ttl==None or rdata==None or rdtype==None or rdclass==None:
                 raise MalformedRecordException('Must have either json or (ttl,rdata,rdtype,rdclass)')
-            
+
             _set_rdclass(self,rdclass)
             _set_rdtype(self,rdtype)
             _set_rdata(self,rdata)
             _set_ttl(self,ttl)
-        
-           
-    
+
+
+
     def changeTTL(self,newttl):
         """Return the same record spec with a different TTL
-        
+
         :raises MalformedTTLException: if the new TTL is invalid
         """
         return RecordSpec(
@@ -321,7 +321,7 @@ class RecordSpec(object):
             presence=self.presence,
             source=self.source
         )
-        
+
     def changePresence(self,newpresence=None):
        """Return the same record spec with a different presence.  If the newpresence
        argument is absent, then the presence is simply toggled."""
@@ -330,7 +330,7 @@ class RecordSpec(object):
                newpresence=self.ABSENT
            else:
                newpresence=self.PRESENT
-    
+
        return RecordSpec(
            rdtype=self.rdtype,
            rdclass=self.rdclass,
@@ -339,7 +339,7 @@ class RecordSpec(object):
            presence=newpresence,
            source=self.source
        )
-    
+
     def changeSource(self,newsource):
         """Return a copy of this record as if it were associated with a new source
         """
@@ -351,18 +351,18 @@ class RecordSpec(object):
             presence=self.presence,
             source=newsource
         )
-        
+
     @property
     def withoutSource(self):
         """return a copy of this record without a source, this is equivalent
         to changeSource(None)
         """
         return self.changeSource(None)
-        
+
     @property
     def source(self):
         """Return the source of this record"""
-        return self._source       
+        return self._source
     @property
     def is_present(self):
         """True if this record is expected to be PRESENT in it's context."""
@@ -371,22 +371,22 @@ class RecordSpec(object):
     def is_absent(self):
         """True if this record is expected to be ABSENT in it's context."""
         return self._presence==self.ABSENT
-         
+
     def __hash__(self):
         """Calculate the hash value on demand
         """
         if self._hash==None:
             h=hashlib.md5(self.key.encode('utf-8')).hexdigest()
             self._hash=int(h,16)
-            
+
         return self._hash
-        
+
     @property
     def key(self):
         """This is a unique hash of the record for use in dicts and other maps
         where duplication is not allowed.  Nothing should depend on the constructed
         value of the hash, which is tempting as it is currently human readable.
-        
+
         The key is separate from the __hash__ value, in that the __hash__ value is
         an integer and allows collissions while the key is unique.  The __hash__ value
         is the md5 form of the key
@@ -407,35 +407,35 @@ class RecordSpec(object):
     def presence(self,newval):
         """Sets the presence, generating an AssertionError if the value
         is not RecordSpec.PRESENT or RecordSpec.ABSENT
-        
+
         :raises AssertionError: if the value is not RecordSpec.PRESENT or RecordSpec.ABSENT
         """
         assert newval in (self.PRESENT,self.ABSENT)
         self._presence=newval
-        
+
     @property
     def singleton(self):
         """True if this record specification should be a singleton, False
         if this record type may have multiple values.
         """
         return RecordType.is_singleton(self.rdtype)
-        
+
     @property
     def ttl(self):
         """Return the TTL of this record"""
         return self._ttl
-   
+
     @property
     def rdata(self):
         """Return the rdata string"""
-        return self._rdata      
-        
+        return self._rdata
+
     @property
     def rdtype(self):
         """returns the RecordType value of this record.  This can be used
         to generate either the numeric or the symbolic name of the record
         type.
-        
+
         Example::
             >>> spec=RecordSpec.a_record('1.2.3.4')
             >>> print(spec.rdtype)
@@ -444,16 +444,16 @@ class RecordSpec(object):
             1
             >>> print(spec.rdtype.name)
             A
-        
+
         """
         return self._rdtype
-                
+
     @property
     def rdclass(self):
         """returns the RecordClass value of this record.  This can be
         used to generate either the numeric or the symbolic name of the
         record class.
-        
+
         Example::
             >>> spec=RecordSpec.a_record('1.2.3.4')
             >>> print(spec.rdclass)
@@ -464,14 +464,14 @@ class RecordSpec(object):
             IN
         """
         return self._rdclass
-            
+
     def to_json(self):
         """
         Returns a JSON serializable dict representation of the data in this
         record.
-        
+
         Description::
-        
+
             {
                 'ttl':self._ttl,
                 'rdata':self._rdata,
@@ -480,7 +480,7 @@ class RecordSpec(object):
                 'presence':self.presence,
                 'source':self.source
             }
-            
+
         """
         return {
             'ttl':self._ttl,
@@ -507,7 +507,7 @@ class RecordSpec(object):
                 ....
                 raise OnlyMXRecordsHaveMXFields()
             hyperdns.netdns.OnlyMXRecordsHaveMXFields
-        
+
         :raises OnlyMXRecordsHaveMXFields: if this is not an MX Record
         """
         if self.rdtype!=RecordType.MX:
@@ -518,7 +518,7 @@ class RecordSpec(object):
     def mx_priority(self):
         """Returns the mx_priority numeric value if this is an MX record, and
         raises an exception if this is not an MX record.
-        
+
         Example::
             >>> spec=RecordSpec.mx_record('mail.example.com',22)
             >>> print(spec)
@@ -531,28 +531,28 @@ class RecordSpec(object):
                 ....
                 raise OnlyMXRecordsHaveMXFields()
             hyperdns.netdns.OnlyMXRecordsHaveMXFields
-            
+
         :raises OnlyMXRecordsHaveMXFields: if this is not an MX record
         """
         if self.rdtype!=RecordType.MX:
             raise OnlyMXRecordsHaveMXFields()
         return self._mx_priority
-       
-       
+
+
     @property
     def soa_nameserver_fqdn(self):
         """Return the ns field
-        
+
         :raises OnlySOARecordsHaveSOAFields: if this is not a SOA record
         """
         if self.rdtype!=RecordType.SOA:
             raise OnlySOARecordsHaveSOAFields()
         return self._soa_ns
-    
+
     @property
     def soa_email(self):
         """Return the email field
-        
+
         :raises OnlySOARecordsHaveSOAFields: if this is not a SOA record
         """
         if self.rdtype!=RecordType.SOA:
@@ -562,59 +562,59 @@ class RecordSpec(object):
     @property
     def soa_serial(self):
         """Return the serial field
-        
+
         :raises OnlySOARecordsHaveSOAFields: if this is not a SOA record
         """
         if self.rdtype!=RecordType.SOA:
             raise OnlySOARecordsHaveSOAFields()
         return self._soa_serial
-        
+
     @property
     def soa_refresh(self):
         """Return the refresh field
-        
+
         :raises OnlySOARecordsHaveSOAFields: if this is not a SOA record
         """
         if self.rdtype!=RecordType.SOA:
             raise OnlySOARecordsHaveSOAFields()
         return self._soa_refresh
-        
+
     @property
     def soa_retry(self):
         """Return the retry value
-        
+
         :raises OnlySOARecordsHaveSOAFields: if this is not a SOA record
         """
         if self.rdtype!=RecordType.SOA:
             raise OnlySOARecordsHaveSOAFields()
         return self._soa_retry
-        
+
     @property
     def soa_expire(self):
         """Return the expiration value
-        
+
         :raises OnlySOARecordsHaveSOAFields: if this is not a SOA record
         """
         if self.rdtype!=RecordType.SOA:
             raise OnlySOARecordsHaveSOAFields()
         return self._soa_expire
-        
+
     @property
     def soa_minttl(self):
         """Return the minimum TTL
-        
+
         :raises OnlySOARecordsHaveSOAFields: if this is not a SOA record
         """
         if self.rdtype!=RecordType.SOA:
             raise OnlySOARecordsHaveSOAFields()
         return self._soa_minttl
-        
-        
+
+
 
     def __repr__(self):
         """Return json representation as text"""
         return json.dumps(self.to_json(),sort_keys=True)
-    
+
     def get(self,key,default=None):
         """Synonym for __getitem__, accepts the default keyword, however
         the default will be returned only if the key is invalid.  This is
@@ -625,7 +625,7 @@ class RecordSpec(object):
         except AttributeError:
             return default
         return default
-        
+
     def __getitem__(self,key):
         """Return one of ttl, rdata, type, class, or key or source
 
@@ -649,26 +649,26 @@ class RecordSpec(object):
             return self.source
         else:
             raise AttributeError('No such attribute:%s' % key)
-            
+
     def __setitem__(self,key,value):
         """RecordSpecs are immutable, you can not adjust values after construction
         :raises AttemptToAlterImmutableRecordSpec: This exception is always raised
         """
         raise AttemptToAlterImmutableRecordSpec()
-         
+
     def __delitem__(self,key):
         """RecordSpecs are immutable, you can not adjust values after construction
         :raises AttemptToAlterImmutableRecordSpec: This exception is always raised
         """
         raise AttemptToAlterImmutableRecordSpec()
-         
- 
- 
- 
- 
- 
- 
-        
+
+
+
+
+
+
+
+
     def __eq__(self,other):
         """Allows comparison between RecordSpec as well as dict, but
         ignoring presence and source attributes.  This is because a record
@@ -676,21 +676,21 @@ class RecordSpec(object):
         match.  Use match() for more detailed control.  Not sure if this
         is the right decision, but RecordPool uses this in the attach
         method to toggle presence flags.
-        
+
         """
         if isinstance(other,self.__class__):
             return self._ttl==other._ttl        \
                 and self._rdata==other._rdata   \
                 and self.rdtype==other.rdtype   \
                 and self.rdclass==other.rdclass
-        elif isinstance(other,dict): 
+        elif isinstance(other,dict):
             return self._ttl==other.get('ttl',None)       \
                 and self._rdata==other.get('rdata',None)  \
                 and self.rdtype==RecordType.as_type(other.get('type',None))  \
                 and self.rdclass==RecordClass.as_class(other.get('class',None))
         else:
             return False
-        
+
     def __ne__(self,other):
         """Simple not __eq__()"""
         return not self.__eq__(other)
@@ -703,13 +703,13 @@ class RecordSpec(object):
         fields1="{%s}{%s}{%s}{%s}" % (r1.rdclass.name,r1.rdtype.name,r1.rdata,r1._ttl)
         fields2="{%s}{%s}{%s}{%s}" % (r2.rdclass.name,r2.rdtype.name,r2.rdata,r2._ttl)
         return fields1 < fields2
- 
+
     def match(self,other,matchTTL=True,matchPresence=True):
         """determine if two records, A and B match where A and B are
         dict-style representations of two DNS records.  rec['class'],
         rec['type'], and rec['rdata'] are compared, and, if matchTTL
         is set to True, then rec['ttl'] must match.
-        
+
         """
         A=self
         B=other
@@ -719,17 +719,17 @@ class RecordSpec(object):
         matchPresence=(not matchPresence) or (A['presence']==B['presence'])
         matchValue=A['rdata']==B['rdata']
         return matchType and matchClass and matchValue and matchTTL and matchPresence
- 
-         
+
+
 
 
     @classmethod
     def a_record(cls,ip,ttl=86400,presence=PRESENT,source=None):
         """Return a record spec for an IPV4 A Record or throw a ValueError
         if the ip is malformed.
-        
+
         Example::
-        
+
             >>> spec=RecordSpec.a_record('1.2.3.4',255)
             >>> print(spec)
             {"class": "IN", "presence": "present", "rdata": "1.2.3.4", "source": null, "ttl": 255, "type": "A"}
@@ -741,7 +741,7 @@ class RecordSpec(object):
             >>> spec=RecordSpec.a_record('1.2.3.4',ttl="5m")
             >>> print(spec)
             {"class": "IN", "presence": "present", "rdata": "1.2.3.4", "source": null, "ttl": 300, "type": "A"}
-        
+
         :param ip: The IPv4 value for the Record
         :type ip: str or IPv4Address
         :param ttl: The TTL, which can be expressed as an integer or as a string
@@ -767,13 +767,13 @@ class RecordSpec(object):
     def aaaa_record(cls,ip,ttl=86400,presence=PRESENT,source=None):
         """Return a record spec for an IPV6 AAAA Record or throw a ValueError
         if the ip is malformed.
-        
+
         Example::
-        
+
             >>> spec=RecordSpec.aaaa_record('FE80:0000:0000:0000:0202:B3FF:FE1E:8329')
             >>> print(spec)
             {"class": "IN", "presence": "present", "rdata": "fe80::202:b3ff:fe1e:8329", "source": null, "ttl": 86400, "type": "AAAA"}
-        
+
         :param ip: The IPv6 value for the Record
         :type ip: str or IPv6Address
         :param ttl: The TTL, which can be expressed as an integer or as a string
@@ -794,17 +794,17 @@ class RecordSpec(object):
             'type':RecordType.AAAA,
             'class':RecordClass.IN
         },presence=presence,source=source)
-        
+
     @classmethod
     def cname_record(cls,cname,ttl=86400,presence=PRESENT,source=None):
         """Return a simple cname record
-        
+
         Example::
-        
+
             >>> spec=RecordSpec.cname_record('www.google.com')
             >>> print(spec)
             {"class": "IN", "presence": "present", "rdata": "www.google.com", "source": null, "ttl": 86400, "type": "CNAME"}
-        
+
         :param cname: The CNAME value for the Record
         :type cname: str
         :param ttl: The TTL, which can be expressed as an integer or as a string
@@ -818,7 +818,7 @@ class RecordSpec(object):
         :rtype: `RecordSpec`
         :raises ValueError: if the IP is not a valid IPv4 address
         :raises MalformedTTLException: if the TTL is invalid
-        
+
         """
         return RecordSpec(json={
             'ttl':ttl,
@@ -826,7 +826,7 @@ class RecordSpec(object):
             'type':RecordType.CNAME,
             'class':RecordClass.IN
         },presence=presence,source=source)
-        
+
     @classmethod
     def mx_record(cls,name,priority,ttl=86400,presence=PRESENT,source=None):
         """Return an MX record.  RecordSpecs of MX type also have an
@@ -860,7 +860,7 @@ class RecordSpec(object):
             'type':RecordType.MX,
             'class':RecordClass.IN
         },presence=presence,source=source)
-        
+
     @classmethod
     def ns_record(cls,ns,ttl=86400,presence=PRESENT):
         """Return a simple NS record
@@ -871,4 +871,4 @@ class RecordSpec(object):
             'type':RecordType.NS,
             'class':RecordClass.IN
         },presence=presence,source=source)
-            
+

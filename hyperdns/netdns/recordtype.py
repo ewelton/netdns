@@ -1,18 +1,18 @@
 import re
-import dns.rdatatype 
+import dns.rdatatype
 from enum import IntEnum
 
- 
+
 _digits=re.compile("^\d+$")
 """This private method is cached and not part of the enum.  This lets
 us easily check to see if a value contains only digits
 """
-    
+
 class RecordType(IntEnum):
     """This is a utility class that incorporates our knowledge of the
     resource record data type values.
     """
-    
+
     NONE=dns.rdatatype.NONE
     """DNS Record Type for NONE Records"""
 
@@ -195,8 +195,8 @@ class RecordType(IntEnum):
 
     DLV=dns.rdatatype.DLV
     """DNS Record Type for DLV Records"""
-    
-    
+
+
     @classmethod
     def as_num(cls,value):
         """Convert text into a DNS rdata type value.
@@ -214,10 +214,10 @@ class RecordType(IntEnum):
             return None
         except ValueError as E:
             return None
-            
+
         return rt.value
-        
- 
+
+
     @classmethod
     def as_str(cls,value):
         """Convert a DNS rdata type to text.
@@ -235,7 +235,7 @@ class RecordType(IntEnum):
             return None
         except ValueError as E:
             return None
-            
+
         return rt.name
 
     @classmethod
@@ -255,7 +255,7 @@ class RecordType(IntEnum):
             return None
         except ValueError as E:
             return None
-             
+
     @classmethod
     def is_singleton(cls,rdtype):
         """True if the type is a singleton, rdtype may be either integer
@@ -268,6 +268,6 @@ class RecordType(IntEnum):
         # query time, but we need to represent multiple CNAMEs when interacting
         # with vendors.
         return cls.as_num(rdtype) in [cls.SOA, 39, 47, 50, 51, 30]
-    
- 
+
+
 

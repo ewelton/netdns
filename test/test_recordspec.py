@@ -12,7 +12,7 @@ class TestCase(unittest.TestCase):
         self.rec1={'type': 'A', 'ttl': 3, 'rdata': '1.2.3.4', 'class': 'IN',
                 'source':None,
                 'presence':RecordSpec.PRESENT}
-        pass 
+        pass
 
     def tearDown(self):
         pass
@@ -26,17 +26,17 @@ class TestCase(unittest.TestCase):
         })
         assert r.to_json()==self.rec1
         old=r
-        
+
         r=RecordSpec(json={
             'ttl':3,
             'rdata':'1.2.3.4',
             'type':'A'
         })
-        
+
         str_r="%s" % r
         #print(r.key)
         assert r.key=='{1.2.3.4}{3}{A}{IN}'
-        #assert str_r=='{"class": "IN", "rdata": "1.2.3.4", "ttl": 3, "type": "A"}'        
+        #assert str_r=='{"class": "IN", "rdata": "1.2.3.4", "ttl": 3, "type": "A"}'
         assert r.to_json()==self.rec1
         assert r==self.rec1
         assert r==old
@@ -47,7 +47,7 @@ class TestCase(unittest.TestCase):
         assert r.presence==r.PRESENT
         assert r.is_present
         assert not r.is_absent
-        
+
         def massive_ttl():
             r.changeTTL(198438290489328908)
 
@@ -60,12 +60,12 @@ class TestCase(unittest.TestCase):
         self.assertRaises(MalformedTTLException,recmaker,'1.2.3.4',ttl=-1)
         self.assertRaises(MalformedTTLException,recmaker,'1.2.3.4',ttl=123123123123)
         self.assertRaises(ValueError,recmaker,'not-ip')
-        
+
     def test_02_mx_fields(self):
         spec=RecordSpec.mx_record('mail.example.com',22)
         assert spec.mx_priority==22
         assert spec.mx_exchange=='mail.example.com'
-        
+
         spec=RecordSpec.a_record('1.2.3.4')
         def read_priority(rec):
             rec.mx_priority
@@ -73,4 +73,4 @@ class TestCase(unittest.TestCase):
         def read_exchange(rec):
             rec.mx_exchange
         self.assertRaises(OnlyMXRecordsHaveMXFields,read_exchange,spec)
-        
+

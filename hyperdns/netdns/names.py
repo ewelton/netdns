@@ -19,7 +19,7 @@ def undotify(name):
 def is_valid_zone_fqdn(zone_fqdn):
     if zone_fqdn==None:
         return False
-    return zone_fqdn.endswith(".")       
+    return zone_fqdn.endswith(".")
 
 def fqdn(name,zone=None):
     """ This produces a string version of a name that is dot terminated
@@ -227,7 +227,7 @@ class NodeName(object):
     """
     def __init__(self,label):
         """
-            Create DNS label instance 
+            Create DNS label instance
 
             Label can be specified as:
             - a list/tuple of byte strings
@@ -289,13 +289,13 @@ class NodeName(object):
                 pointer = get_bits(self.unpack("!H")[0],0,14)
                 save = self.offset
                 if last == save:
-                    raise BufferError("Recursive pointer in NodeName [offset=%d,pointer=%d,length=%d]" % 
+                    raise BufferError("Recursive pointer in NodeName [offset=%d,pointer=%d,length=%d]" %
                             (self.offset,pointer,len(self.data)))
                 if pointer < self.offset:
                     self.offset = pointer
                 else:
                     # Pointer can't point forwards
-                    raise BufferError("Invalid pointer in NodeName [offset=%d,pointer=%d,length=%d]" % 
+                    raise BufferError("Invalid pointer in NodeName [offset=%d,pointer=%d,length=%d]" %
                             (self.offset,pointer,len(self.data)))
                 label.extend(self.decode_name(save).label)
                 self.offset = save
@@ -341,7 +341,7 @@ class NodeName(object):
 
     def encode_name_nocompress(self,name):
         """
-            Encode and store label with no compression 
+            Encode and store label with no compression
             (needed for RRSIG)
         """
         if not isinstance(name,NodeName):

@@ -9,13 +9,13 @@ from hyperdns.netdns import (
     )
 
 import json
-def pprint(a):    
+def pprint(a):
     print(json.dumps(a,indent=4,sort_keys=True))
-    
+
 class TestCase(unittest.TestCase):
 
     def setUp(self):
-        pass 
+        pass
 
     def tearDown(self):
         pass
@@ -26,11 +26,11 @@ class TestCase(unittest.TestCase):
         cname3=RecordSpec.cname_record('one.host.name.',source="B",presence='absent')
         cname4=RecordSpec.cname_record('two.host.name.',source="C",presence='present')
         cname5=RecordSpec.cname_record('three.host.name.',source="D",presence="present")
-        
+
         pool=RecordPool()
         #a=pool.assess(master="A")
         #assert a=={'stable': True, 'delta': {}}
-        
+
         pool.attach(cname1)
         pool.attach(cname2)
         pool.attach(cname3)
@@ -38,10 +38,10 @@ class TestCase(unittest.TestCase):
         pool.attach(cname5)
         a=pool.assess(master="A")
         pprint(a)
-        
+
         #raise Exception('A')
-        
-        
+
+
     def test_01(self):
         pool=RecordPool.from_records([
             RecordSpec.cname_record('one.host.name.',source="A"),
@@ -56,9 +56,9 @@ class TestCase(unittest.TestCase):
         pprint(assessment)
         assessment=pool.assess(master="C")
         pprint(assessment)
-        
+
         #raise Exception('A')
-        
+
     def test_02(self):
         pool=RecordPool.from_records([
             RecordSpec.cname_record('one.host.name.',source="A"),

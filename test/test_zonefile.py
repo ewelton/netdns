@@ -195,7 +195,7 @@ class TestCase(unittest.TestCase):
 
     def setUp(self):
         pass
-        
+
     def tearDown(self):
         pass
 
@@ -205,7 +205,7 @@ class TestCase(unittest.TestCase):
         zone=ZoneData.fromZonefileText(example_com_zonefile)
         assert len(list(zone.resources))==9
         assert zone.fqdn=='example1.com.'
-        
+
     def test_create_zone_from_dict(self):
         zone=ZoneData.from_json(example_com_dict)
         assert len(list(zone.resources))==9

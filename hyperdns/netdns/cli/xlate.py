@@ -1,6 +1,6 @@
 import click,json
 from hyperdns.netdns import ZoneData
-    
+
 
 
 @click.command()
@@ -11,7 +11,7 @@ from hyperdns.netdns import ZoneData
 def xlate(ctx,**kwargs):
     """Translate zone information
     """
-    
+
     input_data=kwargs['in'].read()
     outfile=kwargs['out']
     bind=kwargs['bind']
@@ -22,18 +22,18 @@ def xlate(ctx,**kwargs):
         except Exception as E:
             click.echo("Syntactically valid, semantically invalid JSON:%s" % E)
             raise
-            
+
     except ValueError as E:
         try:
             zonedata=ZoneData.fromZonefileText(input_data)
         except Exception as E:
             click.echo("Failed to process input as either JSON or BIND file:%s" % E)
             raise
-            
+
     except Exception as E:
         click.echo("Failed to interpret input:%s" % E)
         raise
-    
+
     if bind:
         print("%s" % zonedata.zonefile)
     else:

@@ -4,7 +4,7 @@ from hyperdns.netdns import RecordType,MalformedRecordException,MalformedTTLExce
 class TestCase(unittest.TestCase):
 
     def setUp(self):
-        pass 
+        pass
 
     def tearDown(self):
         pass
@@ -14,13 +14,13 @@ class TestCase(unittest.TestCase):
 
     def test_01(self):
         assert int(RecordType.A)==1
-        
+
     def test_02(self):
         assert RecordType.A.name=='A'
 
     def test_03(self):
         assert RecordType.A.value==1
-        
+
     def test_04(self):
         assert RecordType.as_num(1)==1
         assert RecordType.as_num('1')==1
@@ -31,7 +31,7 @@ class TestCase(unittest.TestCase):
         assert RecordType.as_num(113948320432)==None
         assert RecordType.as_num('113948320432')==None
         assert RecordType.as_num('BAD_TYPE')==None
-        
+
     def test_05(self):
         assert RecordType.as_str(1)=='A'
         assert RecordType.as_str('1')=='A'

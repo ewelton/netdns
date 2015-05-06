@@ -13,7 +13,7 @@ class RoutingPolicyEntry:
     """
     def __init__(self):
         self._supporting_info={}
-        
+
     """
     Each node has a local path element, that is used to generate a flattened representation
     of the record set, mapped out by routing policy
@@ -21,21 +21,21 @@ class RoutingPolicyEntry:
     @property
     def path_elt(self):
         return 'elt-%s' % self.key
-        
+
     @property
     def supporting_info(self):
         return self._supporting_info
-     
+
     @abc.abstractmethod
     def key(self):
         """The entry key is used to index the node's entry map.  It varies depending upon
-        the 
+        the
         """
-        
+
     def __hash__(self):
         """All entries are hashable by key"""
         return self.key.__hash__()
-        
+
 class RoutingPolicyNode:
     """
     RoutingPolicyNode is a root class for node, and provides an all_records method that is a wrapper around
@@ -43,24 +43,24 @@ class RoutingPolicyNode:
     a result map that gets filled in as the tree is recursed.
 
     the all_records() might not be actually used.
-    
+
     A RoutingPolicyNode defines a policy_style, which is either 'Geo' or 'Weighted'.  the policy can also
     be either 'Record' or 'RecordSet'
     """
     def __init__(self,policy_style=None):
         self._policy_style=policy_style
-        
+
     @property
     def policy_style(self):
         """
         A RoutingPolicyNode defines a policy_style, which is either 'Geo' or 'Weighted'.
         """
         return self._policy_style
-    
+
     """
     To get all of the records underneath a given node, call this.  It loses the policy_group
     and so we'll need to pass something to find_all_records to build that up.
-    
+
     find_all_records is the recursive part?
     """
     @property
@@ -153,7 +153,7 @@ class GeoNode(RoutingPolicyNode):
         looks more like the space separated list of the potentially comma separated elements,
         some of which may also contain spaces.  It will be unique, but not suitable for a
         path element.
-        
+
         also - why e[region_code].key instead of iterating over values?
         """
         return ' '.join([e[region_code].key for region_code in self.entries.keys()])
@@ -313,7 +313,7 @@ class RecordGroupNode(RoutingPolicyNode):
 
     def __init__(self,entries):
         super(RecordGroupNode,self).__init__(policy_style='RecordSet')
-        
+
         assert all([isinstance(e,RecordNode) for e in entries])
         self._entries = entries
 
@@ -447,7 +447,7 @@ class ResolutionTree:
         else:
             return ResolutionTree(None)
 
-    
+
     def to_json(self):
         """Returns a dictionary suitable for rendering by json.dumps()"""
         if self.root != None:

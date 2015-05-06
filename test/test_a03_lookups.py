@@ -8,7 +8,7 @@ class TestCase(unittest.TestCase):
     def setUp(self):
         self.ns1_google=ipaddress.IPv4Address('216.239.32.10')
         self.eights=ipaddress.IPv4Address('8.8.8.8')
-        pass 
+        pass
 
     def tearDown(self):
         pass
@@ -16,7 +16,7 @@ class TestCase(unittest.TestCase):
     def test_a00_get_address_from_name(self):
         result=NetDNSResolver.get_address_for_nameserver('ns1.google.com')
         assert result==self.ns1_google
-        
+
     def test_a01_get_address_from_addr(self):
         result=NetDNSResolver.get_address_for_nameserver('8.8.8.8')
         assert result==self.eights
@@ -29,7 +29,7 @@ class TestCase(unittest.TestCase):
         assert result!=[]
         assert result['AnswerSection'][0]['Address']=='216.239.32.10'
 
-        
+
     def xtest_a02_query_nameserver(self):
         #result=NetDNSResolver.query_nameserver('www.google.com','8.8.8.8',recursive=True,triesRemaining=1)
         result=NetDNSResolver.query_nameserver('ns1.google.com','8.8.8.8',recursive=False,triesRemaining=3)
@@ -41,7 +41,7 @@ class TestCase(unittest.TestCase):
         result=NetDNSResolver.query_nameserver('ns1.google.com','8.8.8.8',recursive=True,triesRemaining=3)
         print(result)
         raise Exception('A')
-        
+
     def xtest_a01_direct_json_query(self):
         #result=NetDNSResolver.query_nameserver('www.google.com','8.8.8.8',recursive=True,triesRemaining=1)
         result=NetDNSResolver.query_nameserver('www.google.com','8.8.8.8',recursive=False,triesRemaining=3,asjson=True)

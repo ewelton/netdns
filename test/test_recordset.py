@@ -6,12 +6,12 @@ from hyperdns.netdns import (
     MalformedRecordException,MalformedTTLException,
     ResourceRecordTypeClash
     )
-    
+
 class TestCase(unittest.TestCase):
 
     def setUp(self):
         self.rec1={'type': 'A', 'ttl': 3, 'rdata': '1.2.3.4', 'class': 'IN'}
-        pass 
+        pass
 
     def tearDown(self):
         pass
@@ -25,7 +25,7 @@ class TestCase(unittest.TestCase):
             r=RecordSet(RecordType.A)
             r.attach(RecordSpec.cname_record('my.host.name.'))
         self.assertRaises(ResourceRecordTypeClash,attach_bad_rec)
-        
+
     def test_02(self):
         r=RecordSet(RecordType.A)
         r.attach(RecordSpec.a_record('1.2.3.4'))
@@ -67,7 +67,7 @@ class TestCase(unittest.TestCase):
         print(s)
         s.retain_presence(RecordSpec.PRESENT)
         print(s)
-        
+
         #raise Exception('A')
 
 

@@ -7,7 +7,7 @@ class DNSHandler(socketserver.BaseRequestHandler):
     """
         Handler for socketserver. Transparently handles both TCP/UDP requests
         (TCP requests have length prepended) and hands off lookup to resolver
-        instance specified in <SocketServer>.resolver 
+        instance specified in <SocketServer>.resolver
     """
 
     udplen = 0                  # Max udp packet length (0 = ignore)
@@ -62,7 +62,7 @@ class DNSHandler(socketserver.BaseRequestHandler):
             rdata = reply.pack()
 
         return rdata
-          
+
 @click.command()
 @click.pass_context
 def serve(ctx,**kwargs):
@@ -81,7 +81,7 @@ def serve(ctx,**kwargs):
 class BaseResolver(object):
     """
         Base resolver implementation. Provides 'resolve' method which is
-        called by DNSHandler with the decode request (DNSRecord instance) 
+        called by DNSHandler with the decode request (DNSRecord instance)
         and returns a DNSRecord instance as reply.
 
         In most cases you should be able to create a custom resolver by
@@ -89,7 +89,7 @@ class BaseResolver(object):
         application (see fixedresolver/zoneresolver/shellresolver for
         examples)
 
-        Note that a single instance is used by all DNSHandler instances so 
+        Note that a single instance is used by all DNSHandler instances so
         need to consider blocking & thread safety.
     """
     def resolve(self,request,handler):
@@ -226,11 +226,11 @@ class ProxyResolver(BaseResolver):
         Proxy resolver - passes all requests to upstream DNS server and
         returns response
 
-        Note that the request/response will be each be decoded/re-encoded 
+        Note that the request/response will be each be decoded/re-encoded
         twice:
 
-        a) Request packet received by DNSHandler and parsed into DNSRecord 
-        b) DNSRecord passed to ProxyResolver, serialised back into packet 
+        a) Request packet received by DNSHandler and parsed into DNSRecord
+        b) DNSRecord passed to ProxyResolver, serialised back into packet
            and sent to upstream DNS server
         c) Upstream DNS server returns response packet which is parsed into
            DNSRecord
@@ -257,7 +257,7 @@ class ProxyResolver(BaseResolver):
 
 class PassthroughDNSHandler(DNSHandler):
     """
-        Modify DNSHandler logic (get_reply method) to send directly to 
+        Modify DNSHandler logic (get_reply method) to send directly to
         upstream DNS server rather then decoding/encoding packet and
         passing to Resolver (The request/response packets are still
         parsed and logged but this is not inline)

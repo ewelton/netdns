@@ -13,21 +13,21 @@ class TTLIsNotPreferredException(Exception):
     records, but is not.
     """
     pass
-    
+
 class RecordSet(set):
     """ Encapsulates a set of records of a given type, optionally from a
     specific source, with a preferredTTL and with optional respect for
     :rfc:`2181#5.2`
-    
+
     When `source` is set then calls to attach, add, and remove will check
     the source attribute of the records and ensure that they all match.
     If records from another source are added a `ResourceRecordSourceClash`
     exception will be raised.
-    
+
     When preferredTTL is set the behaviour of the has_valid_ttl property
     is changed.  In addition, if exceptionOnBadTTL is set, then an exception
     will be raised when a PRESENT record is added with a different TTL.
-    
+
     When exceptionOnBadTTL is set, then we attempt to respect :rfc:`2181#5.2`
     and will raise a `RFC2181Violation` exception in the event that a PRESENT
     record is added with a ttl that is different from the preferredTTL.  If
@@ -37,7 +37,7 @@ class RecordSet(set):
 
     def __init__(self,rdtype,source=None,preferredTTL=None,exceptionOnBadTTL=False):
         """
-        
+
         :param rdtype: the RecordType for this record set
         :type rdtype: int,str, or RecordType
         :param source: tag the source of these records
@@ -46,7 +46,7 @@ class RecordSet(set):
         :type preferredTTL: boolean
         :param exceptionOnBadTTL: whether or not raise RFC2181Violation exceptions
         :type boolean:
-        
+
         """
         super(RecordSet,self).__init__()
         self._rdtype=RecordType.as_type(rdtype)
@@ -72,7 +72,7 @@ class RecordSet(set):
                 return self.preferredTTL
             else:
                 raise TTLIsNotPreferredException()
-                
+
         return self._preferredTTL
 
     @property
@@ -87,7 +87,7 @@ class RecordSet(set):
                 if rec.ttl!=ttl:
                     return False
         return True
-        
+
     @property
     def minimum_ttl(self):
         """Returns the minimum TTL for the record set
@@ -109,7 +109,7 @@ class RecordSet(set):
         if not self.has_common_ttl:
             return False
         return True
-        
+
     @property
     def source(self):
         """Return the source of this record set"""
@@ -152,7 +152,7 @@ class RecordSet(set):
         for rec in data['records']:
             result.attach(RecordSpec(json=rec))
         return result
-        
+
     def contains(self,spec,matchTTL=False):
         """Returns True if the record set contains this spec
         """
@@ -164,8 +164,8 @@ class RecordSet(set):
             if spec.rdata==rec.rdata:
                 return True
         return False
-    
-        
+
+
     def find(self,spec,presence=RecordSpec.ANY_PRESENCE,matchTTL=False):
         """Return any record that matches the given spec
         """
@@ -176,18 +176,18 @@ class RecordSet(set):
             if rec.match(spec,matchTTL=matchTTL,matchPresence=matchPresence):
                 return rec
         return None
-        
-    
+
+
     def attach(self,spec):
         """Add a record spec to this set if the record type matches.  Present or
         absent record specs can be added, for singletons there can be only a single
         present record
-        
+
         :param spec: The record spec or another record set
         :type spec: RecordSpec or RecordSet
         :raises ResourceRecordSourceClash: if records from another source are
                               added and the set was constructed with source!=None
-        
+
         """
         if not isinstance(spec,RecordSpec):
             if isinstance(spec,RecordSet):
@@ -198,10 +198,10 @@ class RecordSet(set):
                 spec=RecordsSpec(json=spec)
             else:
                 raise ValueError("Can only add json or record specs to record sets")
-        
+
         if self._source!=None and spec.source!=self._source:
             raise ResourceRecordSourceClash()
-        
+
         # if we are respecting RFC2181 and a record is added with a TTL
         # that differs from the set, then raise an RFC2181Violation exception.
         if self._exceptionOnBadTTL and spec.is_present:
@@ -209,15 +209,15 @@ class RecordSet(set):
                 self._preferredTTL=spec.ttl
             if self._preferredTTL!=spec.ttl:
                 raise RFC2181Violation()
-                
+
         if spec.rdtype!=self._rdtype:
             raise ResourceRecordTypeClash("attempt to add %s to set of type %s" % (spec.rdtype,self._rdtype))
-            
-        # now, if we're adding a singleton, 
+
+        # now, if we're adding a singleton,
         if spec.is_present and RecordType.is_singleton(self._rdtype):
             for r in self:
                 r.presence=r.ABSENT
-        
+
         # add the record if we are not there, removing it first - this is because the
         # match is not done on the presence flag, so if the record is in the set with
         # a different presence flag, we won't record the update to the presence flag.
@@ -225,7 +225,7 @@ class RecordSet(set):
         # Note: this depends upon __eq__ in recordspec ignoring presence and source
         super().discard(spec)
         super().add(spec)
-        
+
 
     def add(self,spec):
         """Ensure that the given spec or record spec set is marked to be PRESENT"""
@@ -243,7 +243,7 @@ class RecordSet(set):
 
     def remove(self,spec):
         """Ensure that the given spec or record spec set is marked to be ABSENT
-        
+
         :param spec: The RecordSpec to remove
         :type spec: RecordSpec or RecordSet
         """
@@ -265,16 +265,16 @@ class RecordSet(set):
         for r in self:
             if r.presence==r.PRESENT:
                 yield r
-    @property            
+    @property
     def present_record_count(self):
         """Return the count of record specs in this set marked as PRESENT"""
         return len(list(self.present_records))
-        
-    @property            
+
+    @property
     def has_present_records(self):
         """True if there are records in this set which are marked PRESENT"""
         return self.present_record_count>0
-        
+
     @property
     def absent_records(self):
         """Return only those records marked to be ABSENT"""
@@ -282,12 +282,12 @@ class RecordSet(set):
             if r.presence==r.ABSENT:
                 yield r
 
-    @property            
+    @property
     def absent_record_count(self):
         """Return the count of record specs in this set marked as ABSENT"""
         return len(list(self.absent_records))
-        
-    @property            
+
+    @property
     def has_absent_records(self):
         """True if there are records in this set which are marked ABSENT"""
         return self.absent_record_count>0

@@ -1,5 +1,5 @@
 import re
-import dns.rdataclass 
+import dns.rdataclass
 from enum import IntEnum
 
 _digits=re.compile("^\d+$")
@@ -10,25 +10,25 @@ us easily check to see if a value contains only digits
 class RecordClass(IntEnum):
     """ Enumeration representing DNS record classes.
     """
-    
+
     ANY=dns.rdataclass.ANY
     """DNS Record Class matching any class"""
-    
+
     CH=dns.rdataclass.CH
     """DNS Record Class matching CH or ChaosNet class"""
-    
+
     HS=dns.rdataclass.HS
     """DNS Record Class matching HS or Hesiod class"""
-    
+
     IN=dns.rdataclass.IN
     """DNS Record Class matching IN - or Internet class"""
-    
+
     NONE=dns.rdataclass.NONE
     """DNS Record Class matching no class"""
 
     RESERVED0=dns.rdataclass.RESERVED0
     """DNS Record Class matching RESERVED0 class"""
-    
+
     @classmethod
     def as_num(cls,value):
         """Convert text into a DNS rdata class value.
@@ -46,10 +46,10 @@ class RecordClass(IntEnum):
             return None
         except ValueError as E:
             return None
-            
+
         return rt.value
-        
- 
+
+
     @classmethod
     def as_str(cls,value):
         """Convert a DNS rdata class to text.
@@ -67,7 +67,7 @@ class RecordClass(IntEnum):
             return None
         except ValueError as E:
             return None
-            
+
         return rt.name
 
     @classmethod

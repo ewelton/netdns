@@ -4,7 +4,7 @@ class NetDNSConfiguration(object):
     """The HyperDNS library uses a set of configuration files, which may be
     updated dynamically, but are best cached locally.
     """
-    
+
     FALLBACK={
         'nameservers':{
             'Level3':['209.244.0.3','209.244.0.4'],
@@ -99,7 +99,7 @@ class NetDNSConfiguration(object):
             }
         }
     ACTIVE=None
-    
+
     @classmethod
     def get_default_nameserver(cls):
         return ipaddress.ip_address('8.8.8.8')
@@ -122,6 +122,6 @@ class NetDNSConfiguration(object):
     @classmethod
     def initialize(cls):
         cls.ACTIVE=copy.copy(cls.FALLBACK)
-        
-        
+
+
 NetDNSConfiguration.initialize()

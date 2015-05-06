@@ -1,4 +1,4 @@
-import time   
+import time
 import dns.resolver,dns.ipv4
 from hyperdns.netdns import (
     undotify,
@@ -20,7 +20,7 @@ class NetDNSResolver(object):
         try:
             return ip_address(nameserver)
         except ValueError:
-            try:      
+            try:
                 resolver=dns.resolver.Resolver()
                 resolver.lifetime=1.0
                 query=resolver.query(nameserver)
@@ -36,7 +36,7 @@ class NetDNSResolver(object):
     @classmethod
     def get_nameservers_for_zone(cls,fqdn,nameserver=NetDNSConfiguration.get_default_nameserver()):
         return cls.query_nameserver(fqdn,nameserver,rtype=RecordType.NS)
-    
+
     @classmethod
     def query_nameserver(cls,host,nameserver,recursive=True,triesRemaining=1,asjson=False,rtype=RecordType.ANY):
         """look up a host at a specific nameserver, return all of the result records
@@ -50,7 +50,7 @@ class NetDNSResolver(object):
         except AddressNotFound as E:
             raise UnknownNameserver("Failed to locate nameserver '%s'" % nameserver)
         nameserver="%s" % nameserver
-        
+
         while triesRemaining>0:
             try:
                 query=dns.message.make_query(host,rtype,RecordClass.IN)
@@ -91,7 +91,7 @@ class NetDNSResolver(object):
 
     @classmethod
     def format_as_json(cls,response, flags, querier):
-        """Format a response according to: http://tools.ietf.org/html/draft-bortzmeyer-dns-json-01 
+        """Format a response according to: http://tools.ietf.org/html/draft-bortzmeyer-dns-json-01
         """
         obj = {}
         obj['ReturnCode'] = dns.rcode.to_text(response.rcode())
@@ -125,7 +125,7 @@ class NetDNSResolver(object):
                         obj['AnswerSection'].append({'Type': 'CNAME',
                                                              'Target': str(rdata.target)})
                     elif rdata.rdtype == dns.rdatatype.MX:
-                        obj['AnswerSection'].append({'Type': 'MX', 
+                        obj['AnswerSection'].append({'Type': 'MX',
                                                              'MailExchanger': str(rdata.exchange),
                                                              'Preference': rdata.preference})
                     elif rdata.rdtype == dns.rdatatype.TXT:
@@ -156,8 +156,8 @@ class NetDNSResolver(object):
                             # always available on 2012-05-17
                             pass
                         obj['AnswerSection'].append(returned_object)
-                    elif rdata.rdtype == dns.rdatatype.NSEC3PARAM:   
-                        obj['AnswerSection'].append({'Type': 'NSEC3PARAM', 'Algorithm': rdata.algorithm, 'Iterations': rdata.iterations, 'Salt': to_hexstring(rdata.salt), 'Flags': rdata.flags}) 
+                    elif rdata.rdtype == dns.rdatatype.NSEC3PARAM:
+                        obj['AnswerSection'].append({'Type': 'NSEC3PARAM', 'Algorithm': rdata.algorithm, 'Iterations': rdata.iterations, 'Salt': to_hexstring(rdata.salt), 'Flags': rdata.flags})
                     elif rdata.rdtype == dns.rdatatype.DS:
                         obj['AnswerSection'].append({'Type': 'DS', 'DelegationKey': rdata.key_tag,
                                                              'DigestType': rdata.digest_type})
@@ -185,11 +185,11 @@ class NetDNSResolver(object):
                                                              'Priority': rdata.priority,
                                                              'Weight': rdata.weight})
                     else:
-                        obj['AnswerSection'].append({'Type': "unknown %i" % rdata.rdtype}) 
+                        obj['AnswerSection'].append({'Type': "unknown %i" % rdata.rdtype})
                     if rdata.rdtype != dns.rdatatype.RRSIG:
                         obj['AnswerSection'][-1]['TTL'] = rrset.ttl
                         obj['AnswerSection'][-1]['Name'] = str(rrset.name)
-                    
+
         #try:
         #    duration = querier.delay.total_seconds()
         #except AttributeError: # total_seconds appeared only with Python 2.7
@@ -201,7 +201,7 @@ class NetDNSResolver(object):
                                 'Time': time.strftime("%Y-%m-%d %H:%M:%SZ",
                                                       time.gmtime(time.time())),
                                 'Duration': duration}
-                    
+
         return obj
 
 

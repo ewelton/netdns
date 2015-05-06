@@ -9,7 +9,7 @@ class RecordPool(object):
     of either PRESENT or ABSENT and arrising from a given source.
     This represents the entire suite of resource records, and exists a
     set of Resource Record Sets organized by type and source.
-    
+
     """
 
     def __init__(self):
@@ -22,34 +22,34 @@ class RecordPool(object):
     def sourcemap(self,):
         """Return the sourcemap"""
         return self._sourcemap
-    
+
     def sourcelist(self):
         """Return the availables sources"""
         return self._sourcemap.keys()
-        
+
     def emptySource(self,source):
         """Ensure a slot (for assessments) for an empty source
         """
         self._sourcemap[source]={}
-        
+
     def unifySource(self,source):
         """Change all records to a new source
-        
+
         :param source: the new source
         """
         recs=[rec.changeSource(source) for rec in self.records]
         self._sourcemap={}
         for rec in recs:
             self.attach(rec)
-            
+
     def changeSource(self,source):
         """Change all records to a new source and return a new pool
-        
+
         :param source: the new source
         """
         return RecordPool.from_records([
             rec.changeSource(source) for rec in self.records])
-            
+
     def __repr__(self):
         return json.dumps(self.to_json(),indent=4,sort_keys=True)
 
@@ -61,9 +61,9 @@ class RecordPool(object):
             result[source]={}
             for (t,rset) in tmap.items():
                 result[source][t]=rset.to_json()
-            
+
         return result
-    
+
     @classmethod
     def from_dict(cls,data):
         """Reconstruct this pool from a dict produced as above
@@ -74,9 +74,9 @@ class RecordPool(object):
             for (t,rset) in tmap.items():
                 t=RecordType.as_type(t)
                 result._sourcemap[source][t]=RecordSet.from_dict(rset)
-                
+
         return result
-        
+
     @classmethod
     def from_records(cls,recs,source=None):
         """Create a RecordPool from a set of records.  This uses the add method
@@ -90,11 +90,11 @@ class RecordPool(object):
                 rec['source']=source
             result.attach(rec)
         return result
-    
-    
+
+
     def get_singleton_record(self,rdtype):
         """Return a single record of a given type or raise an Exception
-        
+
         :raises Exception: if there are more than one records for this type
         """
         recs=list(self.selected_records(rdtype=rdtype))
@@ -103,24 +103,24 @@ class RecordPool(object):
         elif len(recs)==0:
             return None
         return recs[0]
-        
+
     def selected_records(self,rdtype=RecordType.ANY,\
                             presence=RecordSpec.PRESENT,source=None):
         """Iterate over a specific set of records determined by the
         filter criteria.
-        
+
         If no filter parameters are provided, all records are returned.
-        
+
         If source is provided, only records from the given source are
         considered.
-        
+
         If presence is provided, the records must also match the stated
         presence.  RecordSpec.ANY_PRESENCE can be used to indicate a don't care
         condition, but we default to PRESENT which is the most common case.
-        
+
         If rdtype is provided, then we restrict records to records of
         a given type.
-        
+
         :param rdtype: the type of records to return
         :type rdtype: int, str, or RecordType
         :param presence: presence or absence criteria
@@ -130,13 +130,13 @@ class RecordPool(object):
         """
         #
         rdtype=RecordType.as_type(rdtype)
-        
+
         # restrict by source, if source is None, consider everyone
         if source==None:
             typemaps=self._sourcemap.values()
         else:
             typemaps=self._sourcemap.get(source)
-            
+
         # restrict by type, if type is ANY consider everyone, otherwise
         # collect records of a given type from all sources selected above
         rsets=[]
@@ -148,23 +148,23 @@ class RecordPool(object):
             for _map in typemaps:
                 _set=_map.get(rdtype,None)
                 if _set!=None:
-                    rsets.append(_set)    
-        
-        # if we have nothing, just jump out    
+                    rsets.append(_set)
+
+        # if we have nothing, just jump out
         if len(rsets)==0:
             return
-            
+
         # return all records, filtered above, that match
         for _set in rsets:
             for rec in _set:
                 if rec.presence==presence or presence==RecordSpec.ANY_PRESENCE:
                     yield rec
- 
+
 
     def contains(self,spec,matchPresence=True,matchSource=False):
         """Mildly different semantics than has_selected_records - contains asks about a
         specific record, under various matching conditions
-        
+
         :param spec: the record to match
         :param matchPresence: when set, then we must match the presence, if absent, then
         any record with the same type, rdata, and ttl will match
@@ -179,7 +179,7 @@ class RecordPool(object):
             if rec.match(spec,matchPresence=matchPresence):
                 return True
         return False
-                                    
+
     def has_selected_records(self,rdtype=RecordType.ANY,\
                             presence=RecordSpec.PRESENT,source=None):
         """Return True if this pool contains records of a given type,
@@ -189,8 +189,8 @@ class RecordPool(object):
         if len(result)>0:
             return True
         return False
-        
-                
+
+
     @property
     def records(self):
         """Return all the records, in no particular order, from all
@@ -199,9 +199,9 @@ class RecordPool(object):
         for _typemap in self._sourcemap.values():
             for _set in _typemap.values():
                 for rec in _set:
-                    yield rec           
+                    yield rec
 
-    
+
     def attach(self,records):
         """Calculate the impact of adding records to this pool.  The
         records can be in the form of another pool, a list of items,
@@ -221,7 +221,7 @@ class RecordPool(object):
         else:
             self._attach_single_record(records)
 
-    
+
     def normalize_pool(self):
         """
         If a record is absent in one set and has no competing records,
@@ -243,25 +243,25 @@ class RecordPool(object):
                     if rec.presence==RecordSpec.ABSENT\
                             and present_records.get(rec.key)==None:
                         rset.discard(rec)
-                        
-                    
-        
+
+
+
 
     def _attach_single_record(self,spec):
         """Attach a single record spec:
-        
+
         If the record exists, but only the presence differs, then the
         presence is effectively toggled.
-        
+
         """
-        
+
         # get ahold of the active record set, creating it if
         # necessary
         presence=spec.presence
         rdtype=spec.rdtype
         typemap=self._sourcemap.setdefault(spec.source,{})
         myset=typemap.setdefault(rdtype,RecordSet(rdtype))
-   
+
         # look to see if we have a matching record relative to the same source
         myrec=myset.find(spec)
         if myrec!=None:
@@ -269,9 +269,9 @@ class RecordPool(object):
                 if spec.presence==RecordSpec.PRESENT:
                     myset.add(spec)
                 else:
-                    myset.remove(spec)                    
+                    myset.remove(spec)
             return
-                        
+
         # if we are requesting that a CNAME be present
         if presence==RecordSpec.PRESENT:
             if rdtype==RecordType.CNAME:
@@ -297,7 +297,7 @@ class RecordPool(object):
 
     def add(self,spec_or_set):
         """Attach one or more records as PRESENT
-        
+
         :param spec_or_set: What to add
         :type spec_or_set: dict,RecordSet,RecordSpec
         """
@@ -309,10 +309,10 @@ class RecordPool(object):
             return
         else:
             self.attach(spec_or_set.changePresence(newpresence=RecordSpec.PRESENT))
-            
+
     def remove(self,spec_or_set):
         """Attach one or more records as ABSENT
-        
+
         :param spec_or_set: What to remove
         :type spec_or_set: dict,RecordSet,RecordSpec
         """
@@ -329,30 +329,30 @@ class RecordPool(object):
     def assess(self,master,sourceList=None):
         """Build a map of the state of the resource, taking into consideration
         the presence and absence of records as well as the source.
-        
+
         Assessments are performed relative to a privileged source.  Without
         the hint of 'master' we could only do the full matrix of what every
         source looks like relative to every other.  Identifying a relative
         master simplifies the computation intensely.
-        
+
         returns a dict defining the assessment::
-        
+
             {
                 'converged':True,
                 'missing':{},
                 'overpresent':{}
             }
-            
+
         :param master: the identity of a source to which the assessment is relative
         :type master: str
         """
-        
+
         # sometimes we have sources that have no records at all, by specifying
         # a sourcelist we can make sure they are included in assessments
         if sourceList!=None:
             for source in sourceList:
                 self._sourcemap.setdefault(source,{})
-                
+
         missing={}
         overpresent={}
 
@@ -376,7 +376,7 @@ class RecordPool(object):
                 else:
                     tmap=othermap.setdefault(t,{})
                     tmap[source]=rset
-        
+
         # now we analyze each record type
         for t in types:
             master=mastermap.get(t)
@@ -431,7 +431,7 @@ class RecordPool(object):
                         else:
                             pass
                             #print("OREC IN MASTER")
-                        
+
 
         converged=(len(missing)==0 and len(overpresent)==0)
         return {
@@ -440,5 +440,5 @@ class RecordPool(object):
                 'overpresent':overpresent
             }
 
-            
-            
+
+

@@ -1,6 +1,6 @@
 import click,json
 from hyperdns.netdns import ZoneData,NetDNSResolver
-    
+
 
 
 @click.command()
@@ -10,7 +10,7 @@ from hyperdns.netdns import ZoneData,NetDNSResolver
 def validate(ctx,**kwargs):
     """Validate a zone against resolvers
     """
-    
+
     input_data=kwargs['in'].read()
     outfile=kwargs['out']
     try:
@@ -20,14 +20,14 @@ def validate(ctx,**kwargs):
         except Exception as E:
             click.echo("Syntactically valid, semantically invalid JSON:%s" % E)
             raise
-            
+
     except ValueError as E:
         try:
             zonedata=ZoneData.fromZonefileText(input_data)
         except Exception as E:
             click.echo("Failed to process input as either JSON or BIND file:%s" % E)
             raise
-            
+
     except Exception as E:
         click.echo("Failed to interpret input:%s" % E)
         raise
@@ -39,7 +39,7 @@ def validate(ctx,**kwargs):
             print("Invalid nameserver entry found in input:",ir['QuestionSection']['Qname'])
         else:
             nameservers.append(ir['AnswerSection']['Address'])
-    
+
     net_results=[NetDNSResolver.quick_lookup(ns) for (t,ns,ttl) in NetDNSResolver.get_nameservers_for_zone(zonedata.fqdn)]
     for ir in net_results:
         if ir['ReturnCode']!='NOERROR':
@@ -47,7 +47,7 @@ def validate(ctx,**kwargs):
         else:
             for res in ir['AnswerSection']:
                 nameservers.append(res['Address'])
-    
+
     for host in zonedata.resources:
         for ns in nameservers:
             print("Lookup ",host.fqdn,"on",ns)

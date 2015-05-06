@@ -6,16 +6,16 @@ from .recordtype import RecordType
 
 class MalformedRecordException(Exception):
     pass
-    
+
 class MalformedTTLException(MalformedRecordException):
     pass
-    
+
 class MalformedResourceDataType(MalformedRecordException):
     pass
-    
+
 class OnlyMXRecordsHaveMXFields(Exception):
     pass
-    
+
 class InvalidMXPriority(Exception):
     pass
 
@@ -24,43 +24,43 @@ class MalformedSOARecord(Exception):
 
 class MalformedSOAEmail(Exception):
     pass
-    
+
 class MalformedPresence(Exception):
     pass
 
 class ResourceRecordTypeClash(Exception):
     pass
-    
+
 class ResourceRecordSourceClash(Exception):
     pass
-    
+
 class CanNotMixARecordsAndCNAMES(Exception):
     pass
-    
+
 class CanNotMixAAAARecordsAndCNAMES(Exception):
     pass
-    
+
 class AddressNotFound(Exception):
     pass
 
 class UnknownNameserver(Exception):
     pass
- 
+
 class ZoneFQDNTooLong(Exception):
     pass
 
 class NodeNameComponentTooLong(Exception):
     pass
-    
+
 class InvalidZoneFQDNException(Exception):
     pass
-    
+
 class MalformedJsonZoneData(Exception):
     pass
-    
+
 class CorruptBindFile(Exception):
     pass
-    
+
 
 class IncorrectlyQualifiedResourceName(Exception):
     """Thrown when attempt is made to use a fully qualified name
@@ -69,8 +69,8 @@ class IncorrectlyQualifiedResourceName(Exception):
     is used as a member of zone2.com, but is valid when it is used
     as a member of zone1.com.
     """
-    pass    
-    
+    pass
+
 class OnlySOARecordsHaveSOAFields(Exception):
     pass
 

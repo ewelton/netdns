@@ -7,11 +7,11 @@ from hyperdns.netdns import (
     MalformedRecordException,MalformedTTLException,
     ResourceRecordTypeClash,CanNotMixARecordsAndCNAMES,CanNotMixAAAARecordsAndCNAMES
     )
-    
+
 class TestCase(unittest.TestCase):
 
     def setUp(self):
-        pass 
+        pass
 
     def tearDown(self):
         pass
@@ -21,15 +21,15 @@ class TestCase(unittest.TestCase):
         cname1=RecordSpec.cname_record('one.host.name.')
         set1=RecordSet(RecordType.CNAME)
         set1.add(cname1)
-        
+
         set2=RecordSet(RecordType.A)
         set2.add(RecordSpec.a_record('1.2.3.4'))
-        
+
         pool.attach(set1)
         def fail_to_attach_1():
             pool.attach(set2)
         self.assertRaises(CanNotMixARecordsAndCNAMES,fail_to_attach_1)
-        
+
         print(pool)
         pool.remove(set1)
         print(pool)
@@ -46,6 +46,6 @@ class TestCase(unittest.TestCase):
         data=pool.to_json()
         pool2=pool.from_dict(data)
         assert pool.to_json()==pool2.to_json()
-        
-        
-        
+
+
+

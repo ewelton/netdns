@@ -14,7 +14,7 @@ class TestCase(unittest.TestCase):
         assert result=="."
         result=dns.undotify('')
         assert result==""
-        
+
     def test_a00_dotify(self):
         result=dns.dotify('a')
         assert result=="a."
