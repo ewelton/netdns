@@ -20,8 +20,26 @@ from .resolutiontree import ResolutionTree
 class ResourceData(object):
     
     def __init__(self,zone,rname,recpool=None):
-        """
+        """This represents a resource in a zone.  This resource may or may
+        not be a 'root' node, meaning that it is not an implictitly managed
+        cname.
         
+        If this is an implicitly generated cname, then is_implicit_in is the resource
+        whose rtree it participates.  the 'is_implicit' property can be used to
+        determine if this is an explicit, top level resource, existing on it's own
+        or whether or not it is an implicit cname.
+        
+        We are in a zone, which may be None if we are simply being used to transport
+        data.  Zone is just an optional parameter, because sometimes we want to get the
+        zone associated with the resource, sometimes we don't care.  It is not used
+        intrisically for anything.
+        
+        _non_balanced_records are records which have no weighting or geographic information
+        associated with them.  this is the simple case of a resource with simple resources,
+        for example "my.host.com IN A 1.2.3.4".
+        
+        If a resource has distribution information, then the resolution trees are stored
+        in the distributions hashmap.        
         """
         self._zone=zone
         self._localname=undotify(rname)
@@ -77,6 +95,21 @@ class ResourceData(object):
         return "%s.%s" % (self.name,self.zone.fqdn)
 
     def to_json(self):
+        """Return a dictionary representation, suitable for rendering as JSON, of
+        the data for this resource.
+        
+        Example:
+            {
+                'name':<the local, non-qualified name of the resource>,
+                'records':record specs for non distributed records
+                'distributions':{}
+                'is_implicit_in':<the record pool object>
+            }
+            
+        Note: this will actively mutate the internal representation, to strip out and
+        lose any A, AAAA, or CNAME records in the pool.  It does not faithfully reproduce
+        the structure in memory.
+        """
         result = {
             'name': self._localname,
         }
@@ -98,9 +131,11 @@ class ResourceData(object):
 
         
 class ZoneData(object):
+    """
+    """
 
     def __init__(self,fqdn=None,source=None,vendor=None):
-        """Create a zone model
+        """Create an empty zone model
         """
         self._nameservers=set()
         self._soa=None
@@ -252,11 +287,7 @@ class ZoneData(object):
     @classmethod
     def from_json(cls,jsondata):
         """
-        Create a :class:`ZoneData` object from a dict
-        
-        Example::
-        
-            
+        Create a :class:`ZoneData` object from a dict.
         """
         zd=ZoneData()
         
@@ -520,8 +551,10 @@ class ZoneData(object):
     @property
     def resources(self):
         """
-        Generator over resources associated with this zone, in sorted alphabetical
-        order by resource name:
+        Generator over all resources associated with this zone, in sorted alphabetical
+        order by resource name.  All resources, whether defined in resolution trees or
+        not are included.  See _root_resources to get just the resources that are not
+        part of a resolution tree.
         
         Example::
         
