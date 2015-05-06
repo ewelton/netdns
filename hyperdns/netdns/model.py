@@ -296,22 +296,32 @@ class ZoneData(object):
             zd._fqdn=jsondata.get('name')
         if not cls.is_valid_zone_fqdn(zd._fqdn):
             raise InvalidZoneFQDNException(zd._fqdn)
+        
             
-        for resource in jsondata.get('resources'):
-            rname = resource['name']
+        for resource_json in jsondata.get('resources'):
+            rname = resource_json['name']
             rd = ResourceData(zd,rname)
             zd._resources[rname] = rd
 
-            records = resource.get('records')
+            records = resource_json.get('records')
             if records != None:
                 for r in records:
                     zd.attachResourceData(rname,RecordSpec(json=r))
 
-            rtree = resource.get('rtree')
+            rtree = resource_json.get('rtree')
             if rtree != None:
                 rd.rtree = ResolutionTree.from_json(rtree)
 
         return zd
+
+    def to_json(self):
+        """
+        Return the zone data as a dict ready for json serialization.
+        """
+        return {
+            'fqdn': self._fqdn,
+            'resources': [res.to_json() for res in self._root_resources],
+        }
         
     @classmethod
     def fromJsonText(cls,jsontext):
@@ -593,14 +603,3 @@ class ZoneData(object):
         for r in sorted(roots):
             yield self._resources[r]
     
-    def to_json(self):
-        """
-        Return the zone data as a dict tree ready for json serialization.
-        """
-        resources = []
-        for res in self._root_resources:
-            resources.append(res.to_json())
-        return {
-            'fqdn': self._fqdn,
-            'resources': resources,
-        }
