@@ -141,7 +141,7 @@ class RecordSet(set):
         return result
 
     @classmethod
-    def from_dict(self,data):
+    def from_json(self,data):
         """returns a RecordSet built out of the JSON as encoded
         in the RecordSet.json property
         """
@@ -149,6 +149,7 @@ class RecordSet(set):
                 source = data['source'],
                 preferredTTL = data['preferredTTL'],
                 exceptionOnBadTTL = data['exceptionOnBadTTL'])
+        #print("ATTACHING RECORDS:",data['records'])
         for rec in data['records']:
             result.attach(RecordSpec(json = rec))
         return result

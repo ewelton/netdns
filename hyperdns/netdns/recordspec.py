@@ -67,7 +67,7 @@ class RecordSpec(object):
                 json = None,
                 ttl = None,rdata = None,rdtype = None,rdclass = RecordClass.IN,
                 presence = None,present = None,absent = None,
-                source = None):
+                source = None,policy_group = None):
         """
         :raises MalformedRecordException: if there are any problems
         :raises MalformedTTLException: if the TTL value is invalid
@@ -91,6 +91,7 @@ class RecordSpec(object):
 
         # record the presence and source value
         self._presence = presence
+        self._policy_group = policy_group
         self._source = source
         # these values are calculated on demand and cached
         self._key = None
@@ -116,7 +117,8 @@ class RecordSpec(object):
                 rdtype = value.get('type')
                 rdclass = value.get('class',RecordClass.IN)
 
-                # these two fields are optional
+                # these three fields are optional
+                self._policy_group = value.get('policy_group',self._policy_group)
                 self._presence = value.get('presence',self._presence)
                 self._source = value.get('source',self._source)
 
@@ -133,7 +135,7 @@ class RecordSpec(object):
             except MalformedTTLException:
                 raise
             except Exception as E:
-                print(E)
+                print("Problem setting recordspec from json:%s" % E)
                 #raise MalformedRecordException()
                 raise E
 
@@ -269,7 +271,7 @@ class RecordSpec(object):
                     pass
                 elif self.rdtype == RecordType.MX:
                     parts = value.split(" ")
-                    if len(parts)<= 1:
+                    if len(parts) <= 1:
                         raise MalformedRecordException("MX Record needs mx priority and host")
                     _set_mx_priority(self,parts[0])
                     _set_mx_exchange(self,parts[1])
@@ -281,7 +283,7 @@ class RecordSpec(object):
                 self._rdata = value
                 return self._rdata
             except Exception as E:
-                raise MalformedRecordException()
+                raise MalformedRecordException("Unknown exception during processing of rdata:E = %s" % E)
 
 
         def _set_rdtype(self,value):
@@ -359,6 +361,10 @@ class RecordSpec(object):
         """
         return self.changeSource(None)
 
+    @property
+    def policy_group(self):
+        """Return the source of this record"""
+        return self._policy_group
     @property
     def source(self):
         """Return the source of this record"""
@@ -488,7 +494,8 @@ class RecordSpec(object):
             'type':self.rdtype.name,
             'class':self.rdclass.name,
             'presence':self.presence,
-            'source':self.source
+            'source':self.source,
+            'policy_group':self.policy_group
         }
 
     @property
@@ -613,7 +620,7 @@ class RecordSpec(object):
 
     def __repr__(self):
         """Return json representation as text"""
-        return json.dumps(self.to_json(),sort_keys = True)
+        return json.dumps(self.__dict__,sort_keys = True)
 
     def get(self,key,default = None):
         """Synonym for __getitem__, accepts the default keyword, however

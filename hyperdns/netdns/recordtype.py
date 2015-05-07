@@ -1,5 +1,4 @@
 import re
-import dns.rdatatype
 from enum import IntEnum
 
 
@@ -13,187 +12,187 @@ class RecordType(IntEnum):
     resource record data type values.
     """
 
-    NONE = dns.rdatatype.NONE
+    NONE = 0
     """DNS Record Type for NONE Records"""
 
-    A = dns.rdatatype.A
+    A = 1
     """DNS Record Type for A Records"""
 
-    NS = dns.rdatatype.NS
+    NS = 2
     """DNS Record Type for NS Records"""
 
-    MD = dns.rdatatype.MD
+    MD = 3
     """DNS Record Type for MD Records"""
 
-    MF = dns.rdatatype.MF
+    MF = 4
     """DNS Record Type for MF Records"""
 
-    CNAME = dns.rdatatype.CNAME
+    CNAME = 5
     """DNS Record Type for CNAME Records"""
 
-    SOA = dns.rdatatype.SOA
+    SOA = 6
     """DNS Record Type for SOA Records"""
 
-    MB = dns.rdatatype.MB
+    MB = 7
     """DNS Record Type for MB Records"""
 
-    MG = dns.rdatatype.MG
+    MG = 8
     """DNS Record Type for MG Records"""
 
-    MR = dns.rdatatype.MR
+    MR = 9
     """DNS Record Type for MR Records"""
 
-    NULL = dns.rdatatype.NULL
+    NULL = 10
     """DNS Record Type for NULL Records"""
 
-    WKS = dns.rdatatype.WKS
+    WKS = 11
     """DNS Record Type for WKS Records"""
 
-    PTR = dns.rdatatype.PTR
+    PTR = 12
     """DNS Record Type for PTR Records"""
 
-    HINFO = dns.rdatatype.HINFO
+    HINFO = 13
     """DNS Record Type for HINFO Records"""
 
-    MINFO = dns.rdatatype.MINFO
+    MINFO = 14
     """DNS Record Type for MINFO Records"""
 
-    MX = dns.rdatatype.MX
+    MX = 15
     """DNS Record Type for MX Records"""
 
-    TXT = dns.rdatatype.TXT
+    TXT = 16
     """DNS Record Type for TXT Records"""
 
-    RP = dns.rdatatype.RP
+    RP = 17
     """DNS Record Type for RP Records"""
 
-    AFSDB = dns.rdatatype.AFSDB
+    AFSDB = 18
     """DNS Record Type for AFSDB Records"""
 
-    X25 = dns.rdatatype.X25
+    X25 = 19
     """DNS Record Type for X25 Records"""
 
-    ISDN = dns.rdatatype.ISDN
+    ISDN = 20
     """DNS Record Type for ISDN Records"""
 
-    RT = dns.rdatatype.RT
+    RT = 21
     """DNS Record Type for RT Records"""
 
-    NSAP = dns.rdatatype.NSAP
+    NSAP = 22
     """DNS Record Type for NSAP Records"""
 
-    NSAP_PTR = dns.rdatatype.NSAP_PTR
+    NSAP_PTR = 23
     """DNS Record Type for NSAP_PTR Records"""
 
-    SIG = dns.rdatatype.SIG
+    SIG = 24
     """DNS Record Type for SIG Records"""
 
-    KEY = dns.rdatatype.KEY
+    KEY = 25
     """DNS Record Type for KEY Records"""
 
-    PX = dns.rdatatype.PX
+    PX = 26
     """DNS Record Type for PX Records"""
 
-    GPOS = dns.rdatatype.GPOS
+    GPOS = 27
     """DNS Record Type for GPOS Records"""
 
-    AAAA = dns.rdatatype.AAAA
+    AAAA = 28
     """DNS Record Type for AAAA Records"""
 
-    LOC = dns.rdatatype.LOC
+    LOC = 29
     """DNS Record Type for LOC Records"""
 
-    NXT = dns.rdatatype.NXT
+    NXT = 30
     """DNS Record Type for NXT Records"""
 
-    SRV = dns.rdatatype.SRV
+    SRV = 33
     """DNS Record Type for SRV Records"""
 
-    NAPTR = dns.rdatatype.NAPTR
+    NAPTR = 35
     """DNS Record Type for NAPTR Records"""
 
-    KX = dns.rdatatype.KX
+    KX = 36
     """DNS Record Type for KX Records"""
 
-    CERT = dns.rdatatype.CERT
+    CERT = 37
     """DNS Record Type for CERT Records"""
 
-    A6 = dns.rdatatype.A6
+    A6 = 38
     """DNS Record Type for A6 Records"""
 
-    DNAME = dns.rdatatype.DNAME
+    DNAME = 39
     """DNS Record Type for DNAME Records"""
 
-    OPT = dns.rdatatype.OPT
+    OPT = 41
     """DNS Record Type for OPT Records"""
 
-    APL = dns.rdatatype.APL
+    APL = 42
     """DNS Record Type for APL Records"""
 
-    DS = dns.rdatatype.DS
+    DS = 43
     """DNS Record Type for DS Records"""
 
-    SSHFP = dns.rdatatype.SSHFP
+    SSHFP = 44
     """DNS Record Type for SSHFP Records"""
 
-    IPSECKEY = dns.rdatatype.IPSECKEY
+    IPSECKEY = 45
     """DNS Record Type for IPSECKEY Records"""
 
-    RRSIG = dns.rdatatype.RRSIG
+    RRSIG = 46
     """DNS Record Type for RRSIG Records"""
 
-    NSEC = dns.rdatatype.NSEC
+    NSEC = 47
     """DNS Record Type for NSEC Records"""
 
-    DNSKEY = dns.rdatatype.DNSKEY
+    DNSKEY = 48
     """DNS Record Type for DNSKEY Records"""
 
-    DHCID = dns.rdatatype.DHCID
+    DHCID = 49
     """DNS Record Type for DHCID Records"""
 
-    NSEC3 = dns.rdatatype.NSEC3
+    NSEC3 = 50
     """DNS Record Type for NSEC3 Records"""
 
-    NSEC3PARAM = dns.rdatatype.NSEC3PARAM
+    NSEC3PARAM = 51
     """DNS Record Type for NSEC3PARAM Records"""
 
-    TLSA = dns.rdatatype.TLSA
+    TLSA = 52
     """DNS Record Type for TLSA Records"""
 
-    HIP = dns.rdatatype.HIP
+    HIP = 55
     """DNS Record Type for HIP Records"""
 
-    SPF = dns.rdatatype.SPF
+    SPF = 99
     """DNS Record Type for SPF Records"""
 
-    UNSPEC = dns.rdatatype.UNSPEC
+    UNSPEC = 103
     """DNS Record Type for UNSPEC Records"""
 
-    TKEY = dns.rdatatype.TKEY
+    TKEY = 249
     """DNS Record Type for TKEY Records"""
 
-    TSIG = dns.rdatatype.TSIG
+    TSIG = 250
     """DNS Record Type for TSIG Records"""
 
-    IXFR = dns.rdatatype.IXFR
+    IXFR = 251
     """DNS Record Type for IXFR Records"""
 
-    AXFR = dns.rdatatype.AXFR
+    AXFR = 252
     """DNS Record Type for AXFR Records"""
 
-    MAILB = dns.rdatatype.MAILB
+    MAILB = 253
     """DNS Record Type for MAILB Records"""
 
-    MAILA = dns.rdatatype.MAILA
+    MAILA = 254
     """DNS Record Type for MAILA Records"""
 
-    ANY = dns.rdatatype.ANY
+    ANY = 255
     """DNS Record Type for ANY Records"""
 
-    TA = dns.rdatatype.TA
+    TA = 32768
     """DNS Record Type for TA Records"""
 
-    DLV = dns.rdatatype.DLV
+    DLV = 32769
     """DNS Record Type for DLV Records"""
 
 
@@ -261,13 +260,7 @@ class RecordType(IntEnum):
         """True if the type is a singleton, rdtype may be either integer
         or alphanumeric
         """
-        # CNAMEs are actually supposed to be singletons, at least in the context
-        # of the protocol. However when load balancing is configured for a resource,
-        # there can be multiple CNAME records for a given resource, each representing
-        # one possible choice. Only of of these is ever returned to resolvers at
-        # query time, but we need to represent multiple CNAMEs when interacting
-        # with vendors.
-        return cls.as_num(rdtype) in [cls.SOA, 39, 47, 50, 51, 30]
+        return cls.as_num(rdtype) in [cls.SOA,cls.CNAME, 39, 47, 50, 51, 30]
 
 
 

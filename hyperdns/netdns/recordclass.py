@@ -1,5 +1,4 @@
 import re
-import dns.rdataclass
 from enum import IntEnum
 
 _digits = re.compile("^\d+$")
@@ -11,22 +10,22 @@ class RecordClass(IntEnum):
     """ Enumeration representing DNS record classes.
     """
 
-    ANY = dns.rdataclass.ANY
+    ANY = 255
     """DNS Record Class matching any class"""
 
-    CH = dns.rdataclass.CH
+    CH = 3
     """DNS Record Class matching CH or ChaosNet class"""
 
-    HS = dns.rdataclass.HS
+    HS = 4
     """DNS Record Class matching HS or Hesiod class"""
 
-    IN = dns.rdataclass.IN
+    IN = 1
     """DNS Record Class matching IN - or Internet class"""
 
-    NONE = dns.rdataclass.NONE
+    NONE = 254
     """DNS Record Class matching no class"""
 
-    RESERVED0 = dns.rdataclass.RESERVED0
+    RESERVED0 = 0
     """DNS Record Class matching RESERVED0 class"""
 
     @classmethod

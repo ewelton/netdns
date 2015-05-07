@@ -23,9 +23,10 @@ class RecordPool(object):
         """Return the sourcemap"""
         return self._sourcemap
 
+    @property
     def sourcelist(self):
         """Return the availables sources"""
-        return self._sourcemap.keys()
+        return sorted(self._sourcemap.keys())
 
     def emptySource(self,source):
         """Ensure a slot (for assessments) for an empty source
@@ -65,7 +66,7 @@ class RecordPool(object):
         return result
 
     @classmethod
-    def from_dict(cls,data):
+    def from_json(cls,data):
         """Reconstruct this pool from a dict produced as above
         """
         result = RecordPool()
@@ -73,7 +74,8 @@ class RecordPool(object):
             result._sourcemap[source] = {}
             for (t,rset) in tmap.items():
                 t = RecordType.as_type(t)
-                result._sourcemap[source][t] = RecordSet.from_dict(rset)
+                #print("FROM JSON ATTACHING RECORDS",rset)
+                result._sourcemap[source][t] = RecordSet.from_json(rset)
 
         return result
 
@@ -87,7 +89,7 @@ class RecordPool(object):
         result = RecordPool()
         for rec in recs:
             if source != None:
-                rec['source'] = source
+                rec = rec.changeSource(source)
             result.attach(rec)
         return result
 
@@ -260,7 +262,7 @@ class RecordPool(object):
         presence = spec.presence
         rdtype = spec.rdtype
         typemap = self._sourcemap.setdefault(spec.source,{})
-        myset = typemap.setdefault(rdtype,RecordSet(rdtype))
+        myset = typemap.setdefault(rdtype,RecordSet(rdtype,source = spec.source))
 
         # look to see if we have a matching record relative to the same source
         myrec = myset.find(spec)
@@ -295,20 +297,31 @@ class RecordPool(object):
         self.normalize_pool()
 
 
-    def add(self,spec_or_set):
+    def add(self,spec_or_set_or_pool):
         """Attach one or more records as PRESENT
 
         :param spec_or_set: What to add
         :type spec_or_set: dict,RecordSet,RecordSpec
         """
-        if isinstance(spec_or_set,dict):
-            spec_or_set = RecordSpec(json = spec_or_set)
-        if isinstance(spec_or_set,RecordSet):
-            for rec in spec_or_set:
-                self.attach(rec.changePresence(newpresence = RecordSpec.PRESENT))
+        if spec_or_set_or_pool == None:
             return
+
+        # automatically convert a dict into a spec
+        if isinstance(spec_or_set_or_pool,dict):
+            spec_or_set_or_pool = RecordSpec(json = spec_or_set_or_pool)
+
+        if isinstance(spec_or_set_or_pool,RecordSet):
+            for rec in spec_or_set_or_pool:
+                self.attach(rec.changePresence(newpresence = RecordSpec.PRESENT))
+        elif isinstance(spec_or_set_or_pool,RecordPool):
+            for rec in spec_or_set_or_pool.records:
+                self.attach(rec.changePresence(newpresence = RecordSpec.PRESENT))
+        elif isinstance(spec_or_set_or_pool,RecordSpec):
+            self.attach(spec_or_set_or_pool.changePresence(newpresence = RecordSpec.PRESENT))
         else:
-            self.attach(spec_or_set.changePresence(newpresence = RecordSpec.PRESENT))
+            print(spec_or_set_or_pool)
+            raise Exception("Unrecognized type being added to pool: %s, val = %s" %\
+                                     (spec_or_set_or_pool.__class__,spec_or_set_or_pool))
 
     def remove(self,spec_or_set):
         """Attach one or more records as ABSENT

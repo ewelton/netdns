@@ -461,11 +461,29 @@ class RecordGroupNode(RoutingPolicyNode):
     Note: RecordGroupNodes do not contain RecordSets, it is just a container of records
     with no protocol verification.
     """
-    def __init__(self,entries):
+    def __init__(self,entries = None):
+        if entries == None:
+            entries = []
         super(RecordGroupNode,self).__init__(policy_style = 'RecordSet')
 
-        assert all([isinstance(e,RecordNode) for e in entries])
-        self._entries = entries
+        # normalize the entry list, so that it contains only RecordNode's - either by
+        # creating RecordNode's wrapped around RecordSpecs or by passing the RecordNode
+        # through.
+        self._entries = []
+        for e in entries:
+            self.add_record(e)
+
+    # FIXME: This breaks immutability, which is relied on by (at minimum) the delta algorithm
+    def add_record(self,entry):
+        """Add an entry to the set - if a record is added directly, it is wrapped in a RecordNode
+        """
+        if isinstance(entry,RecordSpec):
+            self._entries.append(RecordNode(entry))
+        elif isinstance(entry,RecordNode):
+            self._entries.append(entry)
+        else:
+            raise Exception("Can only add recordspecs or recordnodes to record set nodes")
+
 
     @property
     def entries(self):
@@ -631,3 +649,11 @@ class ResolutionTree:
             self.root.find_referenced_cnames(result)
 
         return result
+
+    @property
+    def records(self):
+        result = set()
+        if self.root != None:
+            self.root.find_all_records(result)
+        for r in result:
+            yield r

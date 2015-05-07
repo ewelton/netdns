@@ -11,7 +11,7 @@ class TestCase(unittest.TestCase):
     def setUp(self):
         self.rec1 = {'type': 'A', 'ttl': 3, 'rdata': '1.2.3.4', 'class': 'IN',
                 'source':None,
-                'presence':RecordSpec.PRESENT}
+                'presence':RecordSpec.PRESENT,'policy_group': None}
         pass
 
     def tearDown(self):

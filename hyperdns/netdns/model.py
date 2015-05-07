@@ -42,7 +42,7 @@ class ResourceData(object):
         in the distributions hashmap.
         """
         self._zone = zone
-        self._localname = undotify(rname)
+        self._localname = undotify(rname).lower()
         self._recpool = recpool
         if self._recpool == None:
             self._recpool = RecordPool()
@@ -224,8 +224,19 @@ class ResourceData(object):
         return False
 
 class ZoneData(object):
+    """This represents the state of a zone
     """
-    """
+
+    def _ensure_resource_data(self,rname):
+        """
+        Make sure a resource data exists, creating it if we need to, but otherwise
+        returning the existing ResourceData with the corresponding name.
+        """
+        rd = self._resources.get(self._local_rname(rname))
+        if rd == None:
+            rd = ResourceData(rname)
+            self._resources[rname] = rd
+        return rd
 
     def __init__(self,fqdn = None,source = None,vendor = None):
         """Create an empty zone model
@@ -262,6 +273,14 @@ class ZoneData(object):
         if name.endswith("."):
             return name
         return "%s.%s" % (self._local_rname(name),self.fqdn)
+
+
+    @property
+    def ns_records(self):
+        resource = self._resources.get('@')
+        if resource == None:
+            return []
+        return resource._non_balanced_records.selected_records(rdtype = RecordType.NS)
 
     def hasResource(self,rname):
         """
@@ -375,9 +394,6 @@ class ZoneData(object):
         if zone_fqdn == None:
             return False
         return zone_fqdn.endswith(".")
-
-
-
 
     @classmethod
     def from_json(cls,jsondata):

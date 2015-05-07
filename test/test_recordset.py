@@ -90,5 +90,5 @@ class TestCase(unittest.TestCase):
         s1.attach(RecordSpec.a_record('1.2.3.7'))
         jsondata = s1.to_json()
         print(jsondata)
-        s2 = RecordSet.from_dict(jsondata)
+        s2 = RecordSet.from_json(jsondata)
         assert s2 == s1
